@@ -1,0 +1,177 @@
+---
+import PublicQuoteLayout from '../../layouts/PublicQuoteLayout.astro';
+
+const { token } = Astro.params;
+const API_URL = (import.meta as any).env?.API_URL || 'http://localhost:3000';
+
+let quote = null;
+let error = null;
+
+try {
+  const res = await fetch(`${API_URL}/api/v1/public/quotes/${token}`);
+  const body = await res.json();
+  if (!res.ok) error = body.error || 'No encontrado';
+  else quote = body.data;
+} catch (e) {
+  error = 'Error al cargar la cotización';
+}
+
+function formatCurrency(n: number, currency = 'COP') {
+  return (n || 0).toLocaleString('es-CO', { style: 'currency', currency, minimumFractionDigits: 0 });
+}
+
+const STATUS_LABELS = {
+  draft: 'Borrador', sent: 'Enviada', viewed: 'Vista',
+  accepted: 'Aceptada', rejected: 'Rechazada', expired: 'Expirada',
+};
+---
+<PublicQuoteLayout
+  title={quote ? `Cotización — ${quote.client?.name}` : 'Cotización'}
+  branding={quote?.workspace?.branding}
+>
+  {error ? (
+    <div class="public-quote public-quote--error">
+      <p>Esta cotización no está disponible o el enlace es incorrecto.</p>
+    </div>
+  ) : quote ? (
+    <div class="public-quote">
+      <!-- Encabezado -->
+      <div class="public-quote__meta card">
+        <div class="public-quote__meta-grid">
+          <div>
+            <p class="public-quote__label">Preparado para</p>
+            <p class="public-quote__value public-quote__value--large">{quote.client.name}</p>
+            {quote.client.company && <p class="public-quote__value">{quote.client.company}</p>}
+            {quote.client.email && <p class="public-quote__value public-quote__value--muted">{quote.client.email}</p>}
+          </div>
+          <div class="public-quote__meta-right">
+            <p class="public-quote__label">Estado</p>
+            <span class={`badge badge--${quote.status}`}>{STATUS_LABELS[quote.status as keyof typeof STATUS_LABELS] || quote.status}</span>
+            <p class="public-quote__label" style="margin-top: 12px;">Fecha</p>
+            <p class="public-quote__value">{new Date(quote.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            {quote.expiresAt && (
+              <>
+                <p class="public-quote__label" style="margin-top: 12px;">Válida hasta</p>
+                <p class="public-quote__value">{new Date(quote.expiresAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <!-- Líneas -->
+      <div class="public-quote__items card">
+        <h2 class="public-quote__section-title">Detalle de reservas</h2>
+        <div class="public-quote__table">
+          <div class="public-quote__table-header">
+            <span>Descripción</span>
+            <span class="text-right">Cant.</span>
+            <span class="text-right">Precio</span>
+            {quote.items.some((i: any) => i.discount > 0) && <span class="text-right">Desc.</span>}
+            <span class="text-right">Subtotal</span>
+          </div>
+          {quote.items.map((item: any) => (
+            <div class="public-quote__table-row">
+              <div>
+                <span class="public-quote__item-name">{item.name}</span>
+                {item.booking && (
+                  <div class="public-quote__booking-meta">
+                    <span>Check-in: {item.booking.checkin}</span>
+                    <span>Check-out: {item.booking.checkout}</span>
+                    <span>{item.booking.nights} noche{item.booking.nights !== 1 ? 's' : ''}</span>
+                    <span>{item.booking.adults} adulto{item.booking.adults !== 1 ? 's' : ''}{item.booking.childrenAges?.length > 0 ? ` · ${item.booking.childrenAges.length} menor${item.booking.childrenAges.length !== 1 ? 'es' : ''}` : ''}</span>
+                    {item.booking.boardTypeDescription && item.booking.boardTypeDescription !== 'NO ESPECIFICADO' && (
+                      <span>{item.booking.boardTypeDescription}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <span class="text-right">{item.qty}</span>
+              <span class="text-right">{formatCurrency(item.unitPrice, item.booking?.currency || quote.workspace?.currency)}</span>
+              {quote.items.some((i: any) => i.discount > 0) && (
+                <span class="text-right">{item.discount > 0 ? `${item.discount}%` : '—'}</span>
+              )}
+              <span class="text-right public-quote__item-subtotal">{formatCurrency(item.subtotal, item.booking?.currency || quote.workspace?.currency)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Totales -->
+      <div class="public-quote__totals card">
+        <div class="public-quote__totals-inner">
+          <div class="public-quote__totals-row">
+            <span>Subtotal</span>
+            <span>{formatCurrency(quote.totals.subtotal, quote.workspace?.currency)}</span>
+          </div>
+          {quote.totals.discount > 0 && (
+            <div class="public-quote__totals-row public-quote__totals-row--discount">
+              <span>Descuento</span>
+              <span>− {formatCurrency(quote.totals.discount, quote.workspace?.currency)}</span>
+            </div>
+          )}
+          <div class="public-quote__totals-row">
+            <span>IVA</span>
+            <span>{formatCurrency(quote.totals.tax, quote.workspace?.currency)}</span>
+          </div>
+          <div class="public-quote__totals-row public-quote__totals-row--total">
+            <span>Total</span>
+            <span>{formatCurrency(quote.totals.total, quote.workspace?.currency)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      {quote.notes && (
+        <div class="public-quote__notes card">
+          <h3 class="public-quote__section-title">Notas</h3>
+          <p class="public-quote__notes-text">{quote.notes}</p>
+        </div>
+      )}
+
+      <!-- Preparado por -->
+      <div class="public-quote__footer">
+        <p>Preparado por <strong>{quote.owner?.name}</strong> · {quote.workspace?.name}</p>
+      </div>
+    </div>
+  ) : null}
+</PublicQuoteLayout>
+
+<style>
+  .public-quote { display: flex; flex-direction: column; gap: var(--space-6); }
+  .public-quote--error { padding: var(--space-16); text-align: center; color: var(--color-text-muted); }
+
+  .public-quote__meta-grid { display: grid; grid-template-columns: 1fr auto; gap: var(--space-8); }
+  .public-quote__meta-right { text-align: right; }
+  .public-quote__label { font-size: var(--text-xs); font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-muted); margin-bottom: var(--space-1); }
+  .public-quote__value { font-size: var(--text-base); }
+  .public-quote__value--large { font-size: var(--text-xl); font-weight: var(--font-bold); }
+  .public-quote__value--muted { color: var(--color-text-muted); font-size: var(--text-sm); }
+
+  .public-quote__section-title { font-size: var(--text-base); font-weight: var(--font-semibold); margin-bottom: var(--space-4); }
+
+  .public-quote__table { border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; }
+  .public-quote__table-header, .public-quote__table-row {
+    display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: var(--space-4);
+    padding: var(--space-3) var(--space-5);
+  }
+  .public-quote__table-header { background: var(--color-bg); font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--color-text-muted); text-transform: uppercase; }
+  .public-quote__table-row { border-top: 1px solid var(--color-border); }
+  .public-quote__table-row:nth-child(even) { background: var(--color-bg); }
+  .public-quote__item-name { font-weight: var(--font-medium); }
+  .public-quote__item-subtotal { font-weight: var(--font-semibold); }
+  .text-right { text-align: right; }
+
+  .public-quote__totals { display: flex; justify-content: flex-end; }
+  .public-quote__totals-inner { min-width: 300px; }
+  .public-quote__totals-row { display: flex; justify-content: space-between; padding: var(--space-3) var(--space-5); font-size: var(--text-sm); border-top: 1px solid var(--color-border); }
+  .public-quote__totals-row:first-child { border-top: none; }
+  .public-quote__totals-row--discount { color: var(--color-accent); }
+  .public-quote__totals-row--total { font-size: var(--text-lg); font-weight: var(--font-bold); background: var(--color-primary); color: #fff; }
+
+  .public-quote__notes-text { color: var(--color-text-muted); line-height: 1.7; white-space: pre-line; }
+  .public-quote__footer { text-align: center; font-size: var(--text-sm); color: var(--color-text-muted); padding: var(--space-4) 0; }
+
+  .public-quote__booking-meta { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-1); }
+  .public-quote__booking-meta span { font-size: var(--text-xs); color: var(--color-text-muted); background: var(--color-bg); padding: 2px var(--space-2); border-radius: var(--radius-full); }
+</style>

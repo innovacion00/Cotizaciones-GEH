@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Token:', d['data']['accessToken'][:50]+'...'\\); print\\('WorkspaceId:', d['data']['workspaces'][0]['_id'] if d['data'].get\\('workspaces'\\) else 'N/A'\\)\")",
+      "Bash(curl -s \"http://localhost:4321/src/components/react/HotelBookingWizard.jsx\")"
+    ]
+  }
+}

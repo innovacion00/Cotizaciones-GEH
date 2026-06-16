@@ -1,0 +1,24 @@
+{
+  "name": "cotizador-client",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "eslint src --ext .js,.jsx,.astro"
+  },
+  "dependencies": {
+    "@astrojs/node": "^8.3.2",
+    "@astrojs/react": "^3.6.0",
+    "astro": "^4.11.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.5.0",
+    "eslint": "^9.5.0",
+    "eslint-plugin-react": "^7.34.3",
+    "globals": "^15.6.0"
+  }
+}

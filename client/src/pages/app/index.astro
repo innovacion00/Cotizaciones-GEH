@@ -1,0 +1,83 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+---
+<AppLayout title="Dashboard">
+  <div class="dashboard">
+    <div class="dashboard__stats" id="stats-grid">
+      <div class="card stat-card">
+        <div class="stat-card__label">Total cotizaciones</div>
+        <div class="stat-card__value" id="stat-total">—</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card__label">Enviadas</div>
+        <div class="stat-card__value" id="stat-sent">—</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card__label">Aceptadas</div>
+        <div class="stat-card__value" id="stat-accepted">—</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card__label">En borrador</div>
+        <div class="stat-card__value" id="stat-draft">—</div>
+      </div>
+    </div>
+
+    <div class="dashboard__section">
+      <div class="dashboard__section-header">
+        <h2 class="dashboard__section-title">Cotizaciones recientes</h2>
+        <a href="/app/cotizaciones" class="btn btn--secondary btn--sm">Ver todas</a>
+      </div>
+      <div id="recent-quotes" class="dashboard__quotes-list">
+        <p class="dashboard__loading">Cargando...</p>
+      </div>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  import api from '../../lib/api.js';
+  import { getWorkspaceId } from '../../lib/auth.js';
+
+  async function loadDashboard() {
+    const wsId = getWorkspaceId();
+    if (!wsId) return;
+
+    try {
+      const data = await api.get(`/api/v1/quotes?workspaceId=${wsId}&limit=5`);
+      const quotes = data.quotes || [];
+
+      document.getElementById('stat-total').textContent = data.total ?? quotes.length;
+      document.getElementById('stat-sent').textContent = quotes.filter(q => q.status === 'sent').length;
+      document.getElementById('stat-accepted').textContent = quotes.filter(q => q.status === 'accepted').length;
+      document.getElementById('stat-draft').textContent = quotes.filter(q => q.status === 'draft').length;
+
+      const container = document.getElementById('recent-quotes');
+      if (!quotes.length) { container.innerHTML = '<p class="dashboard__empty">Sin cotizaciones aún.</p>'; return; }
+
+      container.innerHTML = quotes.map(q => `
+        <a href="/app/cotizaciones/${q._id}" class="quote-row">
+          <div class="quote-row__client">${q.client.name}</div>
+          <div class="quote-row__company">${q.client.company || '—'}</div>
+          <span class="badge badge--${q.status}">${q.status}</span>
+          <div class="quote-row__total">$${(q.totals?.total || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</div>
+        </a>
+      `).join('');
+    } catch (err) {
+      console.error('Error cargando dashboard:', err);
+    }
+  }
+
+  loadDashboard();
+</script>
+
+<style>
+  .dashboard { display: flex; flex-direction: column; gap: var(--space-8); }
+  .dashboard__stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-4); }
+
+  .stat-card { text-align: center; }
+  .stat-card__label { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-2); }
+  .stat-card__value { font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-primary); }
+
+  .dashboard__section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); }
+  .dashboard__section-title { font-size: var(--text-lg); font-weight: var(--font-semibold); }
+</style>

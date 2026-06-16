@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Iniciar sesión — Cotizador">
+  <div class="login-page">
+    <div class="login-page__card card">
+      <div class="login-page__header">
+        <h1 class="login-page__title">Cotizador</h1>
+        <p class="login-page__subtitle">Plataforma de cotizaciones inteligentes</p>
+      </div>
+
+      <form id="login-form" class="login-page__form">
+        <div class="form-group">
+          <label class="form-label" for="email">Correo electrónico</label>
+          <input class="form-input" type="email" id="email" name="email" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Contraseña</label>
+          <input class="form-input" type="password" id="password" name="password" required autocomplete="current-password" />
+        </div>
+        <div id="login-error" class="form-error" style="display:none;"></div>
+        <button type="submit" class="btn btn--primary login-page__submit" id="login-btn">
+          Iniciar sesión
+        </button>
+      </form>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { login, isAuthenticated, getWorkspaceId } from '../lib/auth.js';
+  import api from '../lib/api.js';
+
+  if (isAuthenticated()) window.location.href = '/app';
+
+  const form = document.getElementById('login-form');
+  const errorEl = document.getElementById('login-error');
+  const submitBtn = document.getElementById('login-btn');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.style.display = 'none';
+    submitBtn.textContent = 'Entrando...';
+    submitBtn.disabled = true;
+
+    try {
+      await login(form.email.value, form.password.value);
+
+      // Cargar workspace por defecto
+      if (!getWorkspaceId()) {
+        const data = await api.get('/api/v1/workspaces');
+        if (data.workspaces?.length) {
+          localStorage.setItem('workspaceId', data.workspaces[0]._id);
+        }
+      }
+      window.location.href = '/app';
+    } catch (err) {
+      errorEl.textContent = err.message || 'Error al iniciar sesión';
+      errorEl.style.display = 'block';
+      submitBtn.textContent = 'Iniciar sesión';
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .login-page {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-bg) 100%);
+    padding: var(--space-6);
+  }
+  .login-page__card { width: 100%; max-width: 400px; }
+  .login-page__header { text-align: center; margin-bottom: var(--space-8); }
+  .login-page__title { font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-primary); }
+  .login-page__subtitle { color: var(--color-text-muted); margin-top: var(--space-2); }
+  .login-page__form { display: flex; flex-direction: column; gap: var(--space-5); }
+  .login-page__submit { width: 100%; justify-content: center; padding: var(--space-3); }
+</style>

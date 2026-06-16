@@ -1,0 +1,14 @@
+{
+  "name": "cotizador",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
+    "lint": "npm run lint -w server && npm run lint -w client",
+    "test": "npm test -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
