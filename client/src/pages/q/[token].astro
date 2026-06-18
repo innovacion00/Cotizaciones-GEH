@@ -1,5 +1,7 @@
 ---
 import PublicQuoteLayout from '../../layouts/PublicQuoteLayout.astro';
+import { getHotelImageUrl } from '../../lib/hotelImages.js';
+import { getRoomImageUrl } from '../../lib/roomImages.js';
 
 const { token } = Astro.params;
 const API_URL = (import.meta as any).env?.API_URL || 'http://localhost:3000';
@@ -16,8 +18,8 @@ try {
   error = 'Error al cargar la cotización';
 }
 
-function formatCurrency(n: number, currency = 'COP') {
-  return (n || 0).toLocaleString('es-CO', { style: 'currency', currency, minimumFractionDigits: 0 });
+function formatCurrency(n: number) {
+  return (n || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 }
 
 const STATUS_LABELS = {
@@ -48,16 +50,44 @@ const STATUS_LABELS = {
             <p class="public-quote__label">Estado</p>
             <span class={`badge badge--${quote.status}`}>{STATUS_LABELS[quote.status as keyof typeof STATUS_LABELS] || quote.status}</span>
             <p class="public-quote__label" style="margin-top: 12px;">Fecha</p>
-            <p class="public-quote__value">{new Date(quote.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p class="public-quote__value">{new Date(quote.createdAt).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             {quote.expiresAt && (
               <>
                 <p class="public-quote__label" style="margin-top: 12px;">Válida hasta</p>
-                <p class="public-quote__value">{new Date(quote.expiresAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p class="public-quote__value">{new Date(quote.expiresAt).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </>
             )}
           </div>
         </div>
       </div>
+
+      <!-- Imágenes de hoteles y habitaciones -->
+      {quote.items.filter((i: any) => i.booking?.hotelId).reduce((acc: any[], item: any) => {
+        if (!acc.some((a: any) => a.booking.hotelId === item.booking.hotelId && a.booking.roomId === item.booking.roomId)) acc.push(item);
+        return acc;
+      }, []).map((item: any) => {
+        const hotelImg = getHotelImageUrl(item.booking.hotelId, item.booking.hotelName);
+        const roomImg = getRoomImageUrl(item.booking.hotelId, item.booking.roomId);
+        return (hotelImg || roomImg) ? (
+          <div class="public-quote__images card">
+            <h2 class="public-quote__section-title">{item.booking.hotelName}</h2>
+            <div class="public-quote__images-grid">
+              {hotelImg && (
+                <div class="public-quote__image-wrap">
+                  <img src={hotelImg} alt={item.booking.hotelName} class="public-quote__image" loading="lazy" />
+                  <span class="public-quote__image-label">Hotel</span>
+                </div>
+              )}
+              {roomImg && (
+                <div class="public-quote__image-wrap">
+                  <img src={roomImg} alt={item.booking.roomName || 'Habitación'} class="public-quote__image" loading="lazy" />
+                  <span class="public-quote__image-label">{item.booking.roomName || 'Habitación'}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null;
+      })}
 
       <!-- Líneas -->
       <div class="public-quote__items card">
@@ -87,11 +117,11 @@ const STATUS_LABELS = {
                 )}
               </div>
               <span class="text-right">{item.qty}</span>
-              <span class="text-right">{formatCurrency(item.unitPrice, item.booking?.currency || quote.workspace?.currency)}</span>
+              <span class="text-right">{formatCurrency(item.unitPrice)}</span>
               {quote.items.some((i: any) => i.discount > 0) && (
                 <span class="text-right">{item.discount > 0 ? `${item.discount}%` : '—'}</span>
               )}
-              <span class="text-right public-quote__item-subtotal">{formatCurrency(item.subtotal, item.booking?.currency || quote.workspace?.currency)}</span>
+              <span class="text-right public-quote__item-subtotal">{formatCurrency(item.subtotal)}</span>
             </div>
           ))}
         </div>
@@ -102,21 +132,21 @@ const STATUS_LABELS = {
         <div class="public-quote__totals-inner">
           <div class="public-quote__totals-row">
             <span>Subtotal</span>
-            <span>{formatCurrency(quote.totals.subtotal, quote.workspace?.currency)}</span>
+            <span>{formatCurrency(quote.totals.subtotal)}</span>
           </div>
           {quote.totals.discount > 0 && (
             <div class="public-quote__totals-row public-quote__totals-row--discount">
               <span>Descuento</span>
-              <span>− {formatCurrency(quote.totals.discount, quote.workspace?.currency)}</span>
+              <span>− {formatCurrency(quote.totals.discount)}</span>
             </div>
           )}
           <div class="public-quote__totals-row">
             <span>IVA</span>
-            <span>{formatCurrency(quote.totals.tax, quote.workspace?.currency)}</span>
+            <span>{formatCurrency(quote.totals.tax)}</span>
           </div>
           <div class="public-quote__totals-row public-quote__totals-row--total">
             <span>Total</span>
-            <span>{formatCurrency(quote.totals.total, quote.workspace?.currency)}</span>
+            <span>{formatCurrency(quote.totals.total)}</span>
           </div>
         </div>
       </div>
@@ -174,4 +204,13 @@ const STATUS_LABELS = {
 
   .public-quote__booking-meta { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-1); }
   .public-quote__booking-meta span { font-size: var(--text-xs); color: var(--color-text-muted); background: var(--color-bg); padding: 2px var(--space-2); border-radius: var(--radius-full); }
+
+  .public-quote__images-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .public-quote__image-wrap { position: relative; border-radius: var(--radius); overflow: hidden; }
+  .public-quote__image { width: 100%; height: 220px; object-fit: cover; display: block; border-radius: var(--radius); }
+  .public-quote__image-label { position: absolute; bottom: 0; left: 0; right: 0; padding: var(--space-2) var(--space-3); background: linear-gradient(transparent, rgba(0,0,0,.6)); color: #fff; font-size: var(--text-sm); font-weight: var(--font-medium); }
+  @media (max-width: 600px) {
+    .public-quote__images-grid { grid-template-columns: 1fr; }
+    .public-quote__image { height: 180px; }
+  }
 </style>

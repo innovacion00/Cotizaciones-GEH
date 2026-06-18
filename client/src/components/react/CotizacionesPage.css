@@ -1,0 +1,12 @@
+.cotizaciones { display: flex; flex-direction: column; gap: var(--space-6); }
+.cotizaciones__toolbar { display: flex; justify-content: space-between; align-items: center; }
+.cotizaciones__filters select { width: 200px; }
+
+.modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; padding: var(--space-4); }
+.modal__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.4); }
+.modal__content { position: relative; width: calc(100% - var(--space-8)); max-width: 600px; z-index: 1; }
+.modal__title { font-size: var(--text-xl); font-weight: var(--font-semibold); margin-bottom: var(--space-6); }
+.modal__form { display: flex; flex-direction: column; gap: var(--space-4); }
+.modal__actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-2); }
+
+.cotizaciones__cell--actions { display: flex; gap: var(--space-2); justify-content: flex-end; }

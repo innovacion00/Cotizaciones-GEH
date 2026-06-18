@@ -28,8 +28,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
-  import { login, isAuthenticated, getWorkspaceId } from '../lib/auth.js';
-  import api from '../lib/api.js';
+  import { login, isAuthenticated, ensureWorkspaceId } from '../lib/auth.js';
 
   if (isAuthenticated()) window.location.href = '/app';
 
@@ -47,12 +46,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       await login(form.email.value, form.password.value);
 
       // Cargar workspace por defecto
-      if (!getWorkspaceId()) {
-        const data = await api.get('/api/v1/workspaces');
-        if (data.workspaces?.length) {
-          localStorage.setItem('workspaceId', data.workspaces[0]._id);
-        }
-      }
+      await ensureWorkspaceId();
       window.location.href = '/app';
     } catch (err) {
       errorEl.textContent = err.message || 'Error al iniciar sesión';

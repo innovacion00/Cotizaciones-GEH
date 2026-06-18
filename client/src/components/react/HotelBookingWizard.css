@@ -6,7 +6,7 @@
   position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
 }
 .hwiz {
-  position: relative; width: 100%; max-width: 560px; max-height: 90vh;
+  position: relative; width: calc(100% - var(--space-8)); max-width: 920px; max-height: 94vh;
   overflow-y: auto; z-index: 1; display: flex; flex-direction: column; gap: var(--space-4);
 }
 
@@ -33,6 +33,29 @@
 .hwiz__body {
   display: flex; flex-direction: column; gap: var(--space-4);
 }
+
+.hwiz__hotel-preview {
+  display: grid; grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: var(--space-5); align-items: center;
+  padding: var(--space-4); background: var(--color-bg);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+}
+.hwiz__hotel-preview--compact {
+  grid-template-columns: 96px 1fr; gap: var(--space-3); padding: var(--space-3) var(--space-4);
+}
+.hwiz__hotel-image {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: var(--radius); display: block;
+}
+.hwiz__hotel-preview--compact .hwiz__hotel-image { aspect-ratio: 1; }
+.hwiz__hotel-image--placeholder {
+  background: linear-gradient(135deg, var(--color-border) 0%, var(--color-bg) 100%);
+}
+.hwiz__hotel-info { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.hwiz__hotel-name { font-size: var(--text-base); font-weight: var(--font-semibold); line-height: 1.3; }
+.hwiz__hotel-preview--compact .hwiz__hotel-name { font-size: var(--text-sm); }
+.hwiz__hotel-city { font-size: var(--text-sm); color: var(--color-text-muted); }
+
 .hwiz__error {
   padding: var(--space-2) var(--space-3); background: #fee2e2; border-radius: var(--radius);
   font-size: var(--text-sm);
@@ -54,17 +77,29 @@
 }
 
 .hwiz__rooms {
-  display: flex; flex-direction: column; gap: var(--space-3); max-height: 380px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--space-3); max-height: 480px; overflow-y: auto;
 }
 .hwiz__room-card {
   text-align: left; width: 100%; background: var(--color-surface);
   border: 2px solid var(--color-border); border-radius: var(--radius-md);
-  padding: var(--space-4); cursor: pointer; transition: border-color var(--transition), background var(--transition);
-  display: flex; flex-direction: column; gap: var(--space-1);
+  padding: var(--space-3); cursor: pointer; transition: border-color var(--transition), background var(--transition);
 }
 .hwiz__room-card:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary-light); }
 .hwiz__room-card--selected { border-color: var(--color-primary); background: var(--color-primary-light); }
 .hwiz__room-card--unavailable { opacity: .45; cursor: not-allowed; }
+
+.hwiz__room-card-inner {
+  display: grid; grid-template-columns: minmax(100px, 140px) 1fr;
+  gap: var(--space-4); align-items: start;
+}
+.hwiz__room-image {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: var(--radius); display: block;
+}
+.hwiz__room-image--placeholder {
+  background: linear-gradient(135deg, var(--color-border) 0%, var(--color-bg) 100%);
+}
+.hwiz__room-details { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 
 .hwiz__room-name { font-size: var(--text-base); font-weight: var(--font-semibold); }
 .hwiz__room-price {

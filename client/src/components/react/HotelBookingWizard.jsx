@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import './HotelBookingWizard.css';
+import { getHotelImageUrl } from '../../lib/hotelImages.js';
+import { getRoomImageUrl } from '../../lib/roomImages.js';
 
 const API_URL = import.meta.env.API_URL || 'http://localhost:3000';
 
@@ -21,10 +23,45 @@ function formatCOP(n) {
   return (n || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 }
 
+function todayYMD() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function addDaysYMD(ymd, days) {
+  const d = new Date(`${ymd}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function nightsLabel(checkin, checkout) {
   if (!checkin || !checkout) return '';
   const diff = Math.round((new Date(checkout) - new Date(checkin)) / 86400000);
   return diff > 0 ? `${diff} noche${diff !== 1 ? 's' : ''}` : '';
+}
+
+function HotelPreview({ hotelId, hotelName, city, compact = false }) {
+  const imageUrl = getHotelImageUrl(hotelId, hotelName);
+  if (!hotelId || !hotelName) return null;
+
+  return (
+    <div className={`hwiz__hotel-preview${compact ? ' hwiz__hotel-preview--compact' : ''}`}>
+      {imageUrl ? (
+        <img
+          className="hwiz__hotel-image"
+          src={imageUrl}
+          alt={hotelName}
+          loading="lazy"
+        />
+      ) : (
+        <div className="hwiz__hotel-image hwiz__hotel-image--placeholder" aria-hidden="true" />
+      )}
+      <div className="hwiz__hotel-info">
+        <p className="hwiz__hotel-name">{hotelName}</p>
+        {city && <p className="hwiz__hotel-city">{city}</p>}
+      </div>
+    </div>
+  );
 }
 
 export default function HotelBookingWizard({ onConfirm, onCancel }) {
@@ -90,6 +127,10 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
     setSelectedRoom(null);
     if (!hotelId || !checkin || !checkout) {
       setError('Completa hotel, fecha de entrada y fecha de salida.');
+      return;
+    }
+    if (checkin < todayYMD()) {
+      setError('La fecha de entrada no puede ser anterior a hoy.');
       return;
     }
     const nights = Math.round((new Date(checkout) - new Date(checkin)) / 86400000);
@@ -176,6 +217,7 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
                 {hotels.map((h) => <option key={h.hotelId} value={h.hotelId}>{h.name}</option>)}
               </select>
             </div>
+            <HotelPreview hotelId={hotelId} hotelName={hotelName} city={city} />
             <div className="hwiz__footer">
               <button className="btn btn--secondary" onClick={onCancel}>Cancelar</button>
               <button className="btn btn--primary" onClick={() => setStep(2)} disabled={!hotelId}>
@@ -188,15 +230,32 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
         {/* STEP 2 — Fechas y huéspedes */}
         {step === 2 && (
           <div className="hwiz__body">
+            <HotelPreview hotelId={hotelId} hotelName={hotelName} city={city} compact />
             {error && <p className="form-error hwiz__error">{error}</p>}
             <div className="hwiz__dates">
               <div className="form-group">
                 <label className="form-label">Check-in *</label>
-                <input className="form-input" type="date" value={checkin} onChange={(e) => setCheckin(e.target.value)} />
+                <input
+                  className="form-input"
+                  type="date"
+                  value={checkin}
+                  min={todayYMD()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setCheckin(value);
+                    if (checkout && value && checkout <= value) setCheckout('');
+                  }}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Check-out *</label>
-                <input className="form-input" type="date" value={checkout} onChange={(e) => setCheckout(e.target.value)} />
+                <input
+                  className="form-input"
+                  type="date"
+                  value={checkout}
+                  min={checkin ? addDaysYMD(checkin, 1) : todayYMD()}
+                  onChange={(e) => setCheckout(e.target.value)}
+                />
               </div>
             </div>
             {nightsLabel(checkin, checkout) && (
@@ -244,38 +303,50 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
         {/* STEP 3 — Selección de habitación */}
         {step === 3 && availability && (
           <div className="hwiz__body">
+            <HotelPreview hotelId={hotelId} hotelName={hotelName} city={city} compact />
             {error && <p className="form-error hwiz__error">{error}</p>}
             <p className="hwiz__availability-summary">
               {hotelName} · {availability.nights} noche{availability.nights !== 1 ? 's' : ''} · {availability.adults} adulto{availability.adults !== 1 ? 's' : ''}
               {availability.childrenAges.length > 0 && ` · ${availability.childrenAges.length} menor${availability.childrenAges.length !== 1 ? 'es' : ''}`}
             </p>
             <div className="hwiz__rooms">
-              {availability.rooms.map((room, i) => (
+              {availability.rooms.map((room, i) => {
+                const roomImageUrl = getRoomImageUrl(hotelId, room.roomId);
+                return (
                 <button
                   key={`${room.roomId}-${i}`}
                   className={`hwiz__room-card${selectedRoom === room ? ' hwiz__room-card--selected' : ''}${!room.available ? ' hwiz__room-card--unavailable' : ''}`}
                   onClick={() => room.available && setSelectedRoom(room)}
                   disabled={!room.available}
                 >
-                  <div className="hwiz__room-name">{room.roomName}</div>
-                  {room.available ? (
-                    <>
-                      <div className="hwiz__room-price">{formatCOP(room.pricing.amountBeforeTax)}<span className="hwiz__room-tax"> + IVA 19%</span></div>
-                      <div className="hwiz__room-total">Total: {formatCOP(room.pricing.amountAfterTax)}</div>
-                      <div className="hwiz__room-meta">
-                        {room.pricing.boardTypeDescription !== 'NO ESPECIFICADO' && (
-                          <span className="hwiz__room-board">{room.pricing.boardTypeDescription}</span>
-                        )}
-                        <span className={`hwiz__room-refund hwiz__room-refund--${room.pricing.refundable}`}>
-                          {room.pricing.refundable === 'full' ? 'Reembolsable' : room.pricing.refundable === 'partial' ? 'Cancelación parcial' : 'No reembolsable'}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="hwiz__room-unavailable">No disponible</div>
-                  )}
+                  <div className="hwiz__room-card-inner">
+                    {roomImageUrl ? (
+                      <img className="hwiz__room-image" src={roomImageUrl} alt={room.roomName} loading="lazy" />
+                    ) : (
+                      <div className="hwiz__room-image hwiz__room-image--placeholder" aria-hidden="true" />
+                    )}
+                    <div className="hwiz__room-details">
+                      <div className="hwiz__room-name">{room.roomName}</div>
+                      {room.available ? (
+                        <>
+                          <div className="hwiz__room-price">{formatCOP(room.pricing.amountBeforeTax)}<span className="hwiz__room-tax"> + IVA 19%</span></div>
+                          <div className="hwiz__room-total">Total: {formatCOP(room.pricing.amountAfterTax)}</div>
+                          <div className="hwiz__room-meta">
+                            {room.pricing.boardTypeDescription !== 'NO ESPECIFICADO' && (
+                              <span className="hwiz__room-board">{room.pricing.boardTypeDescription}</span>
+                            )}
+                            <span className={`hwiz__room-refund hwiz__room-refund--${room.pricing.refundable}`}>
+                              {room.pricing.refundable === 'full' ? 'Reembolsable' : room.pricing.refundable === 'partial' ? 'Cancelación parcial' : 'No reembolsable'}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="hwiz__room-unavailable">No disponible</div>
+                      )}
+                    </div>
+                  </div>
                 </button>
-              ))}
+              );})}
             </div>
             <div className="hwiz__footer">
               <button className="btn btn--secondary" onClick={() => { setStep(2); setAvailability(null); setSelectedRoom(null); }}>← Atrás</button>

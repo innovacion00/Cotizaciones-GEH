@@ -44,3 +44,18 @@ export function setWorkspaceId(id) {
   if (typeof localStorage === 'undefined') return;
   localStorage.setItem('workspaceId', id);
 }
+
+export async function ensureWorkspaceId() {
+  const existing = getWorkspaceId();
+  if (existing) return existing;
+  try {
+    const data = await api.get('/api/v1/workspaces');
+    if (data.workspaces?.length) {
+      setWorkspaceId(data.workspaces[0]._id);
+      return data.workspaces[0]._id;
+    }
+  } catch {
+    // sin workspace disponible
+  }
+  return null;
+}

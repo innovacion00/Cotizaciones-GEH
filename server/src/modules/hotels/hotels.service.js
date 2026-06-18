@@ -2,6 +2,43 @@ import { env } from '../../config/env.js';
 import { HOTELS, CITIES } from './hotels.constants.js';
 import { AppError } from '../../shared/errors/AppError.js';
 
+function normalizeRateName(name) {
+  return (name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+function isExcludedRate(roomName) {
+  const n = normalizeRateName(roomName);
+  return n.includes('b2b') || n.includes('no reembolsable');
+}
+
+/** Tarifa pública estándar reembolsable (no B2B, no NR). */
+function isStandardRate(roomName) {
+  if (isExcludedRate(roomName)) return false;
+  const n = normalizeRateName(roomName);
+  return n.includes('[tarifa estandar]') || n.includes('[standard]');
+}
+
+function pickStandardProduct(products) {
+  if (!products?.length) return null;
+  return products.find((p) => isStandardRate(p.roomName)) ?? null;
+}
+
+function mapProductPricing(product) {
+  return {
+    rateId: product.rateId,
+    boardTypeDescription: product.boardTypeDescription,
+    refundable: product.refundable,
+    cancellationPolicy: product.cancellationPolicy,
+    currency: product.currency,
+    trm: product.trm,
+    amountBeforeTax: product.baseRate.amountBeforeTax,
+    amountAfterTax: product.baseRate.amountAfterTax,
+  };
+}
+
 export function getCities() {
   return CITIES;
 }
@@ -51,21 +88,14 @@ export async function getAvailability({ hotelId, checkin, checkout, adults, chil
 
   const data = await res.json();
 
-  // Indexar habitaciones disponibles por roomId, filtrando a la tarifa [Tarifa Estándar]
+  // Indexar habitaciones disponibles por roomId con tarifa estándar reembolsable
   const pricingByRoomId = {};
   for (const room of data.available_rooms || []) {
-    const standardProduct = room.products?.find((p) => p.roomName.includes('[Tarifa Estándar]'));
+    const standardProduct = pickStandardProduct(room.products);
     if (standardProduct) {
-      pricingByRoomId[room.roomId] = {
+      pricingByRoomId[String(room.roomId)] = {
         count: room.count,
-        rateId: standardProduct.rateId,
-        boardTypeDescription: standardProduct.boardTypeDescription,
-        refundable: standardProduct.refundable,
-        cancellationPolicy: standardProduct.cancellationPolicy,
-        currency: standardProduct.currency,
-        trm: standardProduct.trm,
-        amountBeforeTax: standardProduct.baseRate.amountBeforeTax,
-        amountAfterTax: standardProduct.baseRate.amountAfterTax,
+        ...mapProductPricing(standardProduct),
       };
     }
   }
@@ -80,7 +110,7 @@ export async function getAvailability({ hotelId, checkin, checkout, adults, chil
     adults: adults || 1,
     childrenAges: childrenAges || [],
     rooms: hotel.rooms.map((room) => {
-      const pricing = pricingByRoomId[room.roomId];
+      const pricing = pricingByRoomId[String(room.roomId)];
       return {
         roomId: room.roomId,
         roomName: room.roomName,

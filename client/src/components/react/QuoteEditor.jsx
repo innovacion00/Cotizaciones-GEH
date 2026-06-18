@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import './QuoteEditor.css';
 import HotelBookingWizard from './HotelBookingWizard.jsx';
 
@@ -32,8 +32,26 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
   const [items, setItems] = useState(initialQuote?.items || []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
   const [error, setError] = useState('');
   const [showHotelWizard, setShowHotelWizard] = useState(false);
+  const [sendCooldown, setSendCooldown] = useState(0);
+  const cooldownRef = useRef(null);
+
+  useEffect(() => {
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
+  }, []);
+
+  function startCooldown() {
+    setSendCooldown(50);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setSendCooldown((prev) => {
+        if (prev <= 1) { clearInterval(cooldownRef.current); cooldownRef.current = null; return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }
 
   const taxRate = quote?.taxRate ?? 0.16;
   const totals = computeTotals(items, taxRate);
@@ -87,8 +105,16 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
   }
 
   async function handleSend() {
+    const email = quote?.client?.email;
+    if (!email) {
+      setError('El cliente no tiene email configurado.');
+      return;
+    }
+    if (!window.confirm(`¿Enviar cotización a ${email}?`)) return;
+
     setSaving(true);
     setError('');
+    setSuccessMsg('');
     try {
       const res = await fetch(`${apiUrl}/api/v1/quotes/${quote._id}/send?workspaceId=${workspaceId}`, {
         method: 'POST',
@@ -98,11 +124,32 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Error enviando');
       setQuote(body.data.quote);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setSuccessMsg('Cotización enviada por correo ✓');
+      setTimeout(() => setSuccessMsg(''), 3000);
+      startCooldown();
     } catch (err) {
       setError(err.message);
     } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('¿Eliminar esta cotización? Esta acción no se puede deshacer.')) return;
+
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`${apiUrl}/api/v1/quotes/${quote._id}?workspaceId=${workspaceId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Error al eliminar');
+      window.location.href = '/app/cotizaciones';
+    } catch (err) {
+      setError(err.message);
       setSaving(false);
     }
   }
@@ -118,12 +165,17 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
         <div className="quote-editor__actions">
           {error && <span className="quote-editor__error">{error}</span>}
           {saved && <span className="quote-editor__saved">Guardado ✓</span>}
+          {successMsg && <span className="quote-editor__saved">{successMsg}</span>}
           <button className="btn btn--secondary" onClick={handleSave} disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
-          {['draft', 'rejected', 'expired'].includes(quote?.status) && (
-            <button className="btn btn--primary" onClick={handleSend} disabled={saving}>
-              Enviar cotización
+          {['draft', 'rejected', 'expired'].includes(quote?.status) ? (
+            <button className="btn btn--primary" onClick={handleSend} disabled={saving || sendCooldown > 0}>
+              {saving ? 'Enviando...' : sendCooldown > 0 ? `Espera ${sendCooldown}s` : 'Enviar cotización'}
+            </button>
+          ) : (
+            <button className="btn btn--secondary btn--sm" onClick={handleSend} disabled={saving || sendCooldown > 0}>
+              {saving ? 'Enviando...' : sendCooldown > 0 ? `Espera ${sendCooldown}s` : 'Reenviar cotización'}
             </button>
           )}
           {quote?.publicToken && (
@@ -136,6 +188,9 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
               Ver vista pública
             </a>
           )}
+          <button className="btn btn--danger" onClick={handleDelete} disabled={saving}>
+            Eliminar
+          </button>
         </div>
       </div>
 

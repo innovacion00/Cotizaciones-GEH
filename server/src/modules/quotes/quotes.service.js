@@ -1,8 +1,11 @@
 import { nanoid } from 'nanoid';
 import Quote from './quote.model.js';
 import Workspace from '../workspaces/workspace.model.js';
+import User from '../auth/user.model.js';
 import { eventBus } from '../../shared/events/EventBus.js';
 import { NotFoundError, ForbiddenError, AppError } from '../../shared/errors/AppError.js';
+import { env } from '../../config/env.js';
+import { sendQuoteEmail } from '../../shared/mail/mail.service.js';
 
 function calculateTotals(items, taxRate = 0.16) {
   const subtotalBeforeDiscount = items.reduce((acc, item) => acc + item.unitPrice * item.qty, 0);
@@ -98,13 +101,27 @@ export async function updateItems(quoteId, workspaceId, userId, items) {
 
 export async function sendQuote(quoteId, workspaceId, userId) {
   const quote = await findQuote(quoteId, workspaceId, userId);
-  if (!['draft', 'rejected', 'expired'].includes(quote.status)) {
+  if (!['draft', 'rejected', 'expired', 'sent', 'viewed', 'accepted'].includes(quote.status)) {
     throw new AppError(`No se puede enviar una cotización con estado '${quote.status}'`, 422, 'INVALID_STATE');
+  }
+
+  if (!quote.client?.email?.trim()) {
+    throw new AppError('El cliente no tiene email configurado', 422, 'NO_CLIENT_EMAIL');
   }
 
   if (!quote.publicToken) {
     quote.publicToken = nanoid(32);
   }
+
+  const owner = await User.findById(userId).select('name').lean();
+  const publicUrl = `${env.CLIENT_URL}/q/${quote.publicToken}`;
+
+  await sendQuoteEmail({
+    quote: quote.toObject(),
+    publicUrl,
+    senderName: owner?.name,
+  });
+
   quote.status = 'sent';
   quote.version += 1;
   await quote.save();

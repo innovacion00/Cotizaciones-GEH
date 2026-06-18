@@ -1,61 +1,9 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
-import QuoteEditor from '../../../components/react/QuoteEditor.jsx';
+import QuoteEditorPage from '../../../components/react/QuoteEditorPage.jsx';
 
-// SSR: en Astro server mode leemos el id desde params
 const { id } = Astro.params;
-const API_URL = import.meta.env.API_URL || 'http://localhost:3000';
 ---
 <AppLayout title="Editor de cotización">
-  <div id="quote-editor-container">
-    <!-- El componente React se hidrata con los datos del servidor -->
-    <div id="editor-placeholder" class="editor-loading">Cargando cotización...</div>
-  </div>
+  <QuoteEditorPage client:load quoteId={id} />
 </AppLayout>
-
-<script define:vars={{ quoteId: id, apiUrl: API_URL }}>
-  import { getWorkspaceId } from '../../../lib/auth.js';
-
-  const wsId = getWorkspaceId();
-
-  async function loadAndMount() {
-    const token = localStorage.getItem('accessToken');
-    const res = await fetch(`${apiUrl}/api/v1/quotes/${quoteId}?workspaceId=${wsId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      credentials: 'include',
-    });
-
-    if (!res.ok) {
-      document.getElementById('editor-placeholder').textContent = 'No se pudo cargar la cotización.';
-      return;
-    }
-
-    const body = await res.json();
-    const quote = body.data.quote;
-
-    // Montar isla React (importación dinámica para que funcione con client:load)
-    window.__quoteData = { quote, workspaceId: wsId, apiUrl };
-    document.getElementById('editor-placeholder').style.display = 'none';
-    document.dispatchEvent(new CustomEvent('quote-loaded', { detail: window.__quoteData }));
-  }
-
-  loadAndMount().catch(console.error);
-</script>
-
-<!-- La isla React se monta con client:only para tener acceso a localStorage -->
-<div id="react-editor-root"></div>
-<script>
-  import { createRoot } from 'react-dom/client';
-  import { createElement } from 'react';
-  import QuoteEditor from '../../../components/react/QuoteEditor.jsx';
-
-  document.addEventListener('quote-loaded', (e) => {
-    const { quote, workspaceId, apiUrl } = e.detail;
-    const root = createRoot(document.getElementById('react-editor-root'));
-    root.render(createElement(QuoteEditor, { quote, workspaceId, apiUrl }));
-  });
-</script>
-
-<style>
-  .editor-loading { padding: var(--space-8); color: var(--color-text-muted); text-align: center; }
-</style>

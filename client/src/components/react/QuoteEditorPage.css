@@ -1,0 +1,5 @@
+.editor-loading { padding: var(--space-8); color: var(--color-text-muted); text-align: center; }
+.editor-error {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-4);
+  padding: var(--space-8); color: var(--color-danger); text-align: center;
+}

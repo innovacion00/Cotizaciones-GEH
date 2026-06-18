@@ -1,13 +1,21 @@
-import request from 'supertest';
-import app from '../app.js';
-import { setupTestDB, teardownTestDB, clearCollections } from './setup.js';
+import { jest } from '@jest/globals';
+
+const sendQuoteEmailMock = jest.fn().mockResolvedValue(undefined);
+
+jest.unstable_mockModule('../shared/mail/mail.service.js', () => ({
+  sendQuoteEmail: sendQuoteEmailMock,
+}));
+
+const { default: request } = await import('supertest');
+const { default: app } = await import('../app.js');
+const { setupTestDB, teardownTestDB, clearCollections } = await import('./setup.js');
 
 let token;
 let workspaceId;
 
 beforeAll(async () => {
   await setupTestDB();
-});
+}, 120000);
 
 afterAll(async () => {
   await teardownTestDB();
@@ -15,8 +23,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await clearCollections();
+  sendQuoteEmailMock.mockClear();
 
-  // Registrar usuario y crear workspace
   const reg = await request(app)
     .post('/api/v1/auth/register')
     .send({ name: 'Vendedor', email: 'vendedor@test.com', password: 'pass1234', role: 'admin' });
@@ -62,12 +70,12 @@ describe('POST /api/v1/quotes', () => {
 });
 
 describe('POST /api/v1/quotes/:id/send', () => {
-  it('genera publicToken y cambia estado a sent', async () => {
+  it('genera publicToken, cambia estado a sent y envía correo', async () => {
     const create = await request(app)
       .post('/api/v1/quotes')
       .query({ workspaceId })
       .set('Authorization', `Bearer ${token}`)
-      .send({ client: { name: 'Cliente B' }, items: [], taxRate: 0.16 });
+      .send({ client: { name: 'Cliente B', email: 'cliente-b@test.com' }, items: [], taxRate: 0.16 });
 
     const quoteId = create.body.data.quote._id;
 
@@ -79,6 +87,52 @@ describe('POST /api/v1/quotes/:id/send', () => {
     expect(send.status).toBe(200);
     expect(send.body.data.quote.status).toBe('sent');
     expect(send.body.data.quote.publicToken).toBeTruthy();
+    expect(sendQuoteEmailMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rechaza envío si el cliente no tiene email', async () => {
+    const create = await request(app)
+      .post('/api/v1/quotes')
+      .query({ workspaceId })
+      .set('Authorization', `Bearer ${token}`)
+      .send({ client: { name: 'Sin Email' }, items: [], taxRate: 0.16 });
+
+    const quoteId = create.body.data.quote._id;
+
+    const send = await request(app)
+      .post(`/api/v1/quotes/${quoteId}/send`)
+      .query({ workspaceId })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(send.status).toBe(422);
+    expect(send.body.error).toMatch(/email/i);
+    expect(sendQuoteEmailMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('DELETE /api/v1/quotes/:id', () => {
+  it('elimina la cotización', async () => {
+    const create = await request(app)
+      .post('/api/v1/quotes')
+      .query({ workspaceId })
+      .set('Authorization', `Bearer ${token}`)
+      .send({ client: { name: 'Cliente D', email: 'd@test.com' }, items: [], taxRate: 0.16 });
+
+    const quoteId = create.body.data.quote._id;
+
+    const del = await request(app)
+      .delete(`/api/v1/quotes/${quoteId}`)
+      .query({ workspaceId })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(del.status).toBe(200);
+
+    const get = await request(app)
+      .get(`/api/v1/quotes/${quoteId}`)
+      .query({ workspaceId })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(get.status).toBe(404);
   });
 });
 
@@ -89,7 +143,7 @@ describe('GET /api/v1/public/quotes/:token', () => {
       .query({ workspaceId })
       .set('Authorization', `Bearer ${token}`)
       .send({
-        client: { name: 'Cliente Público', company: 'ACME' },
+        client: { name: 'Cliente Público', company: 'ACME', email: 'publico@test.com' },
         items: [{ name: 'Servicio', qty: 1, unitPrice: 500 }],
         taxRate: 0.16,
       });
@@ -107,7 +161,6 @@ describe('GET /api/v1/public/quotes/:token', () => {
 
     expect(pub.status).toBe(200);
     expect(pub.body.data.client.name).toBe('Cliente Público');
-    // No debe exponer costos internos ni workspaceId interno
     expect(pub.body.data.workspace.name).toBeDefined();
     expect(pub.body.data._id).toBeUndefined();
   });
