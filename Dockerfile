@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY client/package.json client/
 COPY server/package.json server/
-RUN npm ci --production=false
+RUN npm ci
 
 # Stage 2: Build client (Astro SSR)
 FROM deps AS build-client
@@ -17,7 +17,6 @@ RUN npm run build -w client
 FROM node:20-alpine AS server
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/server/node_modules ./server/node_modules
 COPY server/ server/
 COPY package.json ./
 EXPOSE 3000
@@ -28,7 +27,6 @@ FROM node:20-alpine AS client
 WORKDIR /app
 COPY --from=build-client /app/client/dist ./client/dist
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/client/node_modules ./client/node_modules
 COPY client/package.json ./client/
 EXPOSE 4321
 ENV HOST=0.0.0.0
