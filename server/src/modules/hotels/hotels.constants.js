@@ -31,8 +31,22 @@ export const HOTELS = {
   '13677': { city: 'Cartagena', name: 'Hotel Boquilla', rooms: [] },
 
   // Bogota
-  '18004': { city: 'Bogota', name: 'Hotel Windsor', rooms: [] },
-  '16255': { city: 'Bogota', name: 'Hotel Madisson', rooms: [] },
+  '18004': { city: 'Bogota', name: 'Hotel Windsor', rooms: [
+    { roomId: '129033', roomName: 'Doble estandar twin' },
+    { roomId: '128299', roomName: 'Doble Superior' },
+    { roomId: '129035', roomName: 'Doble Junior Suite' },
+    { roomId: '129036', roomName: 'Doble Junior Twin' },
+    { roomId: '129037', roomName: 'Suite Matrimonial' },
+    { roomId: '129034', roomName: 'Triple Estandar altillo con escaleras' },
+  ]},
+  '16255': { city: 'Bogota', name: 'Hotel Madisson', rooms: [
+    { roomId: '109452', roomName: 'Habitacion Estandar' },
+    { roomId: '109508', roomName: 'Ejecutiva Twin' },
+    { roomId: '109509', roomName: 'Habitacion Cuadruple Standard' },
+    { roomId: '116068', roomName: 'Familiar 3Pax' },
+    { roomId: '109505', roomName: 'Superior con terraza' },
+    { roomId: '109507', roomName: 'Suite Business' },
+  ]},
 
   // Santa marta
   '17491': { city: 'Santa marta', name: 'Hotel Rodadero', rooms: [

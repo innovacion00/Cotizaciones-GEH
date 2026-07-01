@@ -4,7 +4,7 @@ export const HOTEL_IMAGES = {
   '13645': 'https://www.gehsuites.com/recursos/imagenes/hotels/hotel-azuan-suites.jpg',
   '13644': 'https://media-cdn.tripadvisor.com/media/photo-s/1a/fe/a1/45/hotel-avexi-suites.jpg',
   '13643': 'https://www.gehsuites.com/recursos/imagenes/hotels/hotel-marina-suites.jpg',
-  '17644': 'https://space-img.sfo3.digitaloceanspaces.com/Agencias/fachada_hotelabi.webp',
+  '17644': 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/fachada_hotelabi.jpg',
   '13677': 'https://space-img.sfo3.digitaloceanspaces.com/Agencias/fachada_boquilla.jpg',
   '18004': 'https://images.trvl-media.com/lodging/95000000/94320000/94314400/94314363/7ba08d14.jpg?impolicy=resizecrop&rw=575&rh=575&ra=fill',
   '16255': 'https://www.gehsuites.com/recursos/imagenes/hotels/hotel-madisson-inn.jpg',

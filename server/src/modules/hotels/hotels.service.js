@@ -18,7 +18,7 @@ function isExcludedRate(roomName) {
 function isStandardRate(roomName) {
   if (isExcludedRate(roomName)) return false;
   const n = normalizeRateName(roomName);
-  return n.includes('[tarifa estandar]') || n.includes('[standard]');
+  return n.includes('[tarifa estandar]') || n.includes('[standard]') || n.includes('[standard rate]') || n.includes('[estandar rate');
 }
 
 function pickStandardProduct(products) {

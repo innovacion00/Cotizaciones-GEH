@@ -17,6 +17,7 @@ const bookingSchema = new mongoose.Schema(
     cancellationPolicy: String,
     currency: String,
     trm: Number,
+    bankAccountKey: String,
   },
   { _id: false }
 );

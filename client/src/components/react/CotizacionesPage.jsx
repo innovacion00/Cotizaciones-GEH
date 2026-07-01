@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Swal from 'sweetalert2';
 import api from '../../lib/api.js';
 import { ensureWorkspaceId } from '../../lib/auth.js';
 import HotelBookingWizard from './HotelBookingWizard.jsx';
@@ -12,6 +13,7 @@ export default function CotizacionesPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [showClientModal, setShowClientModal] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [pendingClient, setPendingClient] = useState(null);
   const [clientForm, setClientForm] = useState({
     clientName: '',
@@ -75,26 +77,38 @@ export default function CotizacionesPage() {
     setShowWizard(true);
   }
 
-  async function handleConfirmItem(item) {
+  async function handleConfirmItems(items) {
+    if (creating) return;
+    setCreating(true);
     try {
       const data = await api.post(`/api/v1/quotes?workspaceId=${workspaceId}`, {
         client: pendingClient,
-        items: [item],
+        items,
         taxRate: 0.19,
       });
       window.location.href = `/app/cotizaciones/${data.quote._id}`;
     } catch (err) {
-      alert(`Error al crear cotización: ${err.message}`);
+      setCreating(false);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Ha ocurrido un error al intentar crear la cotización. Intente nuevamente o más tarde.' });
     }
   }
 
   async function handleDeleteQuote(quoteId, clientName) {
-    if (!window.confirm(`¿Eliminar la cotización de ${clientName}? Esta acción no se puede deshacer.`)) return;
+    const { isConfirmed } = await Swal.fire({
+      title: '¿Eliminar cotización?',
+      text: `¿Eliminar la cotización de ${clientName}? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/api/v1/quotes/${quoteId}?workspaceId=${workspaceId}`);
       await loadQuotes(statusFilter);
     } catch (err) {
-      alert(`Error al eliminar: ${err.message}`);
+      Swal.fire({ icon: 'error', title: 'Error', text: `Error al eliminar: ${err.message}` });
     }
   }
 
@@ -139,15 +153,19 @@ export default function CotizacionesPage() {
             <div className="cotizaciones__header-row">
               <span>Cliente</span>
               <span>Empresa</span>
+              <span>Hotel</span>
               <span>Estado</span>
               <span>Total</span>
               <span>Fecha</span>
               <span />
             </div>
-            {quotes.map((q) => (
+            {quotes.map((q) => {
+              const hotelName = q.items?.find((i) => i.booking?.hotelName)?.booking?.hotelName || '—';
+              return (
               <div key={q._id} className="cotizaciones__row">
                 <div className="cotizaciones__cell cotizaciones__cell--client">{q.client.name}</div>
                 <div className="cotizaciones__cell">{q.client.company || '—'}</div>
+                <div className="cotizaciones__cell">{hotelName}</div>
                 <div className="cotizaciones__cell">
                   <span className={`badge badge--${q.status}`}>{q.status}</span>
                 </div>
@@ -170,7 +188,7 @@ export default function CotizacionesPage() {
                   </button>
                 </div>
               </div>
-            ))}
+            );})}
           </>
         )}
       </div>
@@ -232,7 +250,8 @@ export default function CotizacionesPage() {
 
       {showWizard && (
         <HotelBookingWizard
-          onConfirm={handleConfirmItem}
+          onConfirm={handleConfirmItems}
+          submitting={creating}
           onCancel={() => {
             setShowWizard(false);
             setShowClientModal(true);

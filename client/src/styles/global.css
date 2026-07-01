@@ -11,8 +11,8 @@ ul, ol { list-style: none; }
 /* Design Tokens */
 :root {
   /* Colors */
-  --color-primary:      #2563eb;
-  --color-primary-dark: #1d4ed8;
+  --color-primary:      #cd964d;
+  --color-primary-dark: #a06b26;
   --color-primary-light:#eff6ff;
   --color-accent:       #10b981;
   --color-danger:       #ef4444;
@@ -28,9 +28,9 @@ ul, ol { list-style: none; }
   --color-text-inverse: #ffffff;
 
   /* Sidebar */
-  --color-sidebar-bg:   #1e293b;
-  --color-sidebar-text: #cbd5e1;
-  --color-sidebar-active: #2563eb;
+  --color-sidebar-bg:   #cd964d;
+  --color-sidebar-text: #f8f8f8;
+  --color-sidebar-active: #7c5016;
 
   /* Spacing */
   --space-1:  4px;
@@ -126,7 +126,7 @@ ul, ol { list-style: none; }
 
 .cotizaciones__header-row,
 .cotizaciones__row {
-  display: grid; grid-template-columns: 1.5fr 1.5fr 120px 120px 100px minmax(160px, auto);
+  display: grid; grid-template-columns: 1.3fr 1fr 1.2fr 100px 110px 90px minmax(150px, auto);
   gap: var(--space-4); align-items: center; padding: var(--space-3) var(--space-5);
 }
 .cotizaciones__header-row { font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .05em; background: var(--color-bg); border-radius: var(--radius) var(--radius) 0 0; }

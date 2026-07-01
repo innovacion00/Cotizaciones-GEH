@@ -22,6 +22,20 @@ function formatCurrency(n: number) {
   return (n || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 }
 
+function calcPaymentDeadline(checkinYmd: string) {
+  if (!checkinYmd) return null;
+  const [y, m, d] = checkinYmd.split('-').map(Number);
+  const endPrevMonth = new Date(y, m - 1, 0);
+  const twoBefore = new Date(y, m - 1, d - 2);
+  return endPrevMonth <= twoBefore ? endPrevMonth : twoBefore;
+}
+
+const primaryCheckin = quote?.items?.find((i: any) => i.booking?.checkin)?.booking?.checkin;
+const deadlineDate = primaryCheckin ? calcPaymentDeadline(primaryCheckin) : null;
+const deadlineStr = deadlineDate
+  ? deadlineDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
+  : '';
+
 const STATUS_LABELS = {
   draft: 'Borrador', sent: 'Enviada', viewed: 'Vista',
   accepted: 'Aceptada', rejected: 'Rechazada', expired: 'Expirada',
@@ -60,6 +74,12 @@ const STATUS_LABELS = {
           </div>
         </div>
       </div>
+
+      {deadlineStr && (
+        <div class="public-quote__deadline card">
+          <p><strong>Fecha límite de anticipo:</strong> {deadlineStr}</p>
+        </div>
+      )}
 
       <!-- Imágenes de hoteles y habitaciones -->
       {quote.items.filter((i: any) => i.booking?.hotelId).reduce((acc: any[], item: any) => {
@@ -198,6 +218,8 @@ const STATUS_LABELS = {
   .public-quote__totals-row:first-child { border-top: none; }
   .public-quote__totals-row--discount { color: var(--color-accent); }
   .public-quote__totals-row--total { font-size: var(--text-lg); font-weight: var(--font-bold); background: var(--color-primary); color: #fff; }
+
+  .public-quote__deadline { background: #fef3c7; border-left: 4px solid #f59e0b; padding: var(--space-3) var(--space-5); font-size: var(--text-sm); }
 
   .public-quote__notes-text { color: var(--color-text-muted); line-height: 1.7; white-space: pre-line; }
   .public-quote__footer { text-align: center; font-size: var(--text-sm); color: var(--color-text-muted); padding: var(--space-4) 0; }

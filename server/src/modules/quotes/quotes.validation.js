@@ -16,6 +16,7 @@ const bookingSchema = Joi.object({
   cancellationPolicy: Joi.string().allow('', null),
   currency: Joi.string(),
   trm: Joi.number(),
+  bankAccountKey: Joi.string().allow('', null),
 }).unknown(true);
 
 const itemSchema = Joi.object({

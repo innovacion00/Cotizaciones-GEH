@@ -1,3 +1,5 @@
+import { calcPaymentDeadline } from './quotePdf.js';
+
 function formatCurrency(n) {
   return (n || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 }
@@ -110,6 +112,12 @@ export function buildQuoteEmail({ quote, publicUrl, senderName }) {
     ? bookingGroups.map((g) => buildBookingSectionHtml(g, clientName)).join('')
     : '<p style="margin:0 0 20px;color:#64748b;">Sin detalle de reserva hotelera.</p>';
 
+  const primaryCheckin = bookingGroups[0]?.booking?.checkin;
+  const deadlineDate = calcPaymentDeadline(primaryCheckin);
+  const deadlineStr = deadlineDate
+    ? deadlineDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+
   const includesHtml = PACKAGE_INCLUDES.map((item) => `<li>${item}</li>`).join('');
   const legalHtml = LEGAL_NOTES.map((item) => `<li>${item}</li>`).join('');
 
@@ -158,6 +166,12 @@ export function buildQuoteEmail({ quote, publicUrl, senderName }) {
     <p style="margin:0 0 20px;text-align:left;">
       <strong>Nota:</strong> el NO envío del comprobante en la fecha estipulada o anterior a esta, puede causar la apertura de disponibilidad o venta de la habitación sin previo aviso, por lo tanto, es de suma importancia hacer el envío de la foto o escáner por el presente medio como prueba de garantía.
     </p>
+
+    ${deadlineStr ? `
+    <p style="margin:0 0 20px;text-align:left;padding:12px 16px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;">
+      <strong>Fecha límite de anticipo:</strong> ${deadlineStr}
+    </p>
+    ` : ''}
 
     <p style="margin:0 0 8px;font-weight:600;text-align:left;">Tener en cuenta:</p>
     <ul style="margin:0 0 24px;padding-left:20px;line-height:1.7;text-align:left;">${legalHtml}</ul>
@@ -226,7 +240,7 @@ Hora de ingreso: 3:00 pm
 Horario de salida: 12:00 Mediodía
 
 Nota: el NO envío del comprobante en la fecha estipulada o anterior a esta, puede causar la apertura de disponibilidad o venta de la habitación sin previo aviso, por lo tanto, es de suma importancia hacer el envío de la foto o escáner por el presente medio como prueba de garantía.
-
+${deadlineStr ? `\nFecha límite de anticipo: ${deadlineStr}\n` : ''}
 Tener en cuenta:
 ${LEGAL_NOTES.map((item) => `• ${item}`).join('\n')}
 

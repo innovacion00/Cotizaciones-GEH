@@ -35,28 +35,28 @@ export const ROOM_IMAGES = {
   '125837': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/465103563.jpg?k=c576cf614094adb97aac6fb5efaf9824d0e82cc4475335da439307f9b988c998&o=&hp=1', name: 'Habitación Triple' },
 
   // Windsor (18004)
-  '129033': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/471544109.webp?k=cfe9b729c64f0c0daf9a4e12b2e73a37969464218d18c8aefe75ac8372a69184&o=', name: 'Doble estandar twin' },
-  '128299': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/16238061.webp?k=2577bcb3f4193b4541dc7622f2c8fa6575719bc10d81b33a0346d4fba1be476e&o=', name: 'Doble Superior' },
-  '129035': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/471544107.webp?k=becf339774cf1f30d6cf0b0deaf4968c14e1f7ef81a860a96ea54ebf2f66fd5d&o=', name: 'Doble Junior Suite' },
-  '129036': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/471543564.webp?k=2ea2ba03ec7ff46492ce5998c37f4fd3b6e20b6ae787057ed6b947374833516c&o=', name: 'Doble Junior Twin' },
-  '129037': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/471544106.webp?k=3e08d57aed1444ddddc842f3f448788f730887c0ef56c4457b118413a8269ec1&o=', name: 'Suite Matrimonial' },
-  '129034': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/471545508.webp?k=e3a2a7fa0b4b33817d0cb70798664e99632dfbafa1eb14082e8b175e36dc399d&o=', name: 'Triple Estandar altillo con escaleras' },
+  '129033': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20windsor/Doble%20estandar%20twin.jpg', name: 'Doble estandar twin' },
+  '128299': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20windsor/Doble%20Superior.jpg', name: 'Doble Superior' },
+  '129035': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20windsor/Doble%20Junior%20Suite.jpg', name: 'Doble Junior Suite' },
+  '129036': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20windsor/Doble%20Junior%20Twin.jpg', name: 'Doble Junior Twin' },
+  '129037': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20windsor/Suite%20Matrimonial.jpg', name: 'Suite Matrimonial' },
+  '129034': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20windsor/Triple%20Estandar%20altillo%20con%20escaleras.jpg', name: 'Triple Estandar altillo con escaleras' },
 
   // Madisson (16255)
-  '109508': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/383334230.webp?k=d17106ce148a62065276e27a754e9dc18114ffcb5216053d27fbd729bb3de33d&o=', name: 'Ejecutiva Twin' },
-  '109452': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/383334226.webp?k=a004d558a7caac5707bdc849283abfeb2ecd6d58cf26240134d7f05eb8dec747&o=', name: 'Habitacion Estandar' },
+  '109508': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20madisson/Ejecutiva%20Twin.jpg', name: 'Ejecutiva Twin' },
+  '109452': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20madisson/Habitacion%20Estandar.jpg', name: 'Habitacion Estandar' },
   '109509': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/383334155.jpg?k=ba1ec414837795ab1103b686854e44de7bed29be732ebe15e4939f48caed974b&o=&hp=1', name: 'Habitacion Cuadruple Standard' },
-  '116068': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/383334236.webp?k=45c0d1d467b2948766f9498bd96ad31c23d6d07bd4bc56c868c1c350867191d2&o=', name: 'Familiar 3Pax' },
-  '16255:125832': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/383334103.webp?k=2ab38772d7efc02a82af9ecdbb30fe80e426884ba1921673816001a052fcef5f&o=', name: 'Suite Business' },
-  '109505': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/383334105.webp?k=a47582ec901b5eb62ceb7f54c35513f4be2dcb643c1afb614de836d9d4e13d58&o=', name: 'Superior con terraza' },
-  '109507': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/383334103.webp?k=2ab38772d7efc02a82af9ecdbb30fe80e426884ba1921673816001a052fcef5f&o=', name: 'SUITE BUSINESS' },
+  '116068': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20madisson/Familiar%203Pax.jpg', name: 'Familiar 3Pax' },
+  '16255:125832': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20madisson/Suite%20Business.jpg', name: 'Suite Business' },
+  '109505': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20madisson/Superior%20con%20terraza.jpg', name: 'Superior con terraza' },
+  '109507': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20madisson/SUITE%20BUSINESS%202.jpg', name: 'SUITE BUSINESS' },
 
   // Rodadero (17491)
-  '125833': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/465439311.webp?k=54a110e3e17479e02e7a68081ef190742c897c7880a2d1ac5adfdb7c651395fc&o=', name: 'Cuadruple estandar' },
-  '121966': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/465439332.webp?k=be9946ab62f0398843255b2a33a1145d955860e341f24ab15e3ce246d3ebbc40&o=', name: 'Doble estandar' },
-  '17491:125832': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/465439311.webp?k=54a110e3e17479e02e7a68081ef190742c897c7880a2d1ac5adfdb7c651395fc&o=', name: 'Triple estandar' },
+  '125833': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20rodadero/Cuadruple%20estandar.jpg', name: 'Cuadruple estandar' },
+  '121966': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20rodadero/Doble%20estandar.jpg', name: 'Doble estandar' },
+  '17491:125832': { url: 'https://space-img.sfo3.digitaloceanspaces.com/Hoteles%20y%20habitaciones/habitaciones%20rodadero/Triple%20estandar.jpg', name: 'Triple estandar' },
 
-  // Hotel 1525
+  // Hotel 1525 — still webp, pending replacement
   '104423': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/277587915.webp?k=be35499f5579b4a7e3023c6f36ea998be04c2e9c436744d6668a29b4ac779e24&o=', name: 'Cuadruple estandar' },
   '104145': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/276804089.webp?k=e98318f7fe089ef70520a3b984f5c08bcf5507fb0d92a1ab56c243473912d928&o=', name: 'Doble estandar' },
   '104422': { url: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/276804078.webp?k=c39084688f6346321275d1563e107f25fb3ff606b136083830a9f1fcd869d0fc&o=', name: 'Triple estandar' },

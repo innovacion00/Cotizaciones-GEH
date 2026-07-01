@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './HotelBookingWizard.css';
 import { getHotelImageUrl } from '../../lib/hotelImages.js';
 import { getRoomImageUrl } from '../../lib/roomImages.js';
+import { BANK_ACCOUNTS, getDefaultBankKey } from '../../lib/bankAccounts.js';
 
 const API_URL = import.meta.env.API_URL || 'http://localhost:3000';
 
@@ -34,25 +35,23 @@ function addDaysYMD(ymd, days) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function computeNights(checkin, checkout) {
+  if (!checkin || !checkout) return 0;
+  return Math.max(0, Math.round((new Date(checkout) - new Date(checkin)) / 86400000));
+}
+
 function nightsLabel(checkin, checkout) {
-  if (!checkin || !checkout) return '';
-  const diff = Math.round((new Date(checkout) - new Date(checkin)) / 86400000);
-  return diff > 0 ? `${diff} noche${diff !== 1 ? 's' : ''}` : '';
+  const n = computeNights(checkin, checkout);
+  return n > 0 ? `${n} noche${n !== 1 ? 's' : ''}` : '';
 }
 
 function HotelPreview({ hotelId, hotelName, city, compact = false }) {
   const imageUrl = getHotelImageUrl(hotelId, hotelName);
   if (!hotelId || !hotelName) return null;
-
   return (
     <div className={`hwiz__hotel-preview${compact ? ' hwiz__hotel-preview--compact' : ''}`}>
       {imageUrl ? (
-        <img
-          className="hwiz__hotel-image"
-          src={imageUrl}
-          alt={hotelName}
-          loading="lazy"
-        />
+        <img className="hwiz__hotel-image" src={imageUrl} alt={hotelName} loading="lazy" />
       ) : (
         <div className="hwiz__hotel-image hwiz__hotel-image--placeholder" aria-hidden="true" />
       )}
@@ -64,7 +63,7 @@ function HotelPreview({ hotelId, hotelName, city, compact = false }) {
   );
 }
 
-export default function HotelBookingWizard({ onConfirm, onCancel }) {
+export default function HotelBookingWizard({ onConfirm, onCancel, submitting = false }) {
   const [step, setStep] = useState(1);
   const [cities, setCities] = useState([]);
   const [city, setCity] = useState('');
@@ -78,7 +77,10 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
   const [childrenAges, setChildrenAges] = useState([]);
   const [loading, setLoading] = useState(false);
   const [availability, setAvailability] = useState(null);
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [roomQuantities, setRoomQuantities] = useState({});
+  const [manualMode, setManualMode] = useState(false);
+  const [manualRooms, setManualRooms] = useState([]);
+  const [bankKey, setBankKey] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -101,6 +103,7 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
     const hotel = hotels.find((h) => h.hotelId === id);
     setHotelId(id);
     setHotelName(hotel?.name || '');
+    setBankKey(getDefaultBankKey(id) || '');
   }
 
   function handleChildrenCountChange(n) {
@@ -121,10 +124,54 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
     });
   }
 
+  // --- Room quantity helpers ---
+  function totalSelectedRooms() {
+    return Object.values(roomQuantities).reduce((a, b) => a + b, 0);
+  }
+
+  function incrementRoom(index) {
+    setRoomQuantities((prev) => {
+      const current = prev[index] || 0;
+      const max = availability?.rooms[index]?.pricing?.count;
+      if (max != null && current >= max) return prev;
+      return { ...prev, [index]: current + 1 };
+    });
+  }
+
+  function decrementRoom(index) {
+    setRoomQuantities((prev) => {
+      const current = prev[index] || 0;
+      if (current <= 0) return prev;
+      const next = { ...prev };
+      if (current === 1) delete next[index];
+      else next[index] = current - 1;
+      return next;
+    });
+  }
+
+  // --- Manual room helpers ---
+  function addManualRoom() {
+    const n = availability?.nights || computeNights(checkin, checkout);
+    setManualRooms((prev) => [...prev, { roomName: '', pricePerNight: 0, nights: n || 1 }]);
+  }
+
+  function updateManualRoom(index, field, value) {
+    setManualRooms((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
+  }
+
+  function removeManualRoom(index) {
+    setManualRooms((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function validManualRooms() {
+    return manualRooms.filter((r) => r.roomName.trim() && r.pricePerNight > 0 && r.nights > 0);
+  }
+
+  // --- Availability search ---
   async function buscarDisponibilidad() {
     setError('');
     setAvailability(null);
-    setSelectedRoom(null);
+    setRoomQuantities({});
     if (!hotelId || !checkin || !checkout) {
       setError('Completa hotel, fecha de entrada y fecha de salida.');
       return;
@@ -133,7 +180,7 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
       setError('La fecha de entrada no puede ser anterior a hoy.');
       return;
     }
-    const nights = Math.round((new Date(checkout) - new Date(checkin)) / 86400000);
+    const nights = computeNights(checkin, checkout);
     if (nights < 1) { setError('La fecha de salida debe ser posterior a la entrada.'); return; }
 
     setLoading(true);
@@ -151,35 +198,67 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
     }
   }
 
+  // --- Confirm ---
   function confirmar() {
-    if (!selectedRoom) return;
-    const nights = availability.nights;
-    const item = {
-      name: `${hotelName} — ${selectedRoom.roomName} (${nights} noche${nights !== 1 ? 's' : ''})`,
-      qty: 1,
-      unitPrice: selectedRoom.pricing.amountBeforeTax,
-      discount: 0,
-      subtotal: selectedRoom.pricing.amountBeforeTax,
-      booking: {
-        city,
-        hotelId,
-        hotelName,
-        roomId: selectedRoom.roomId,
-        roomName: selectedRoom.roomName,
-        checkin: availability.checkin,
-        checkout: availability.checkout,
-        nights,
-        adults: availability.adults,
-        childrenAges: availability.childrenAges,
-        boardTypeDescription: selectedRoom.pricing.boardTypeDescription,
-        refundable: selectedRoom.pricing.refundable,
-        cancellationPolicy: selectedRoom.pricing.cancellationPolicy,
-        currency: selectedRoom.pricing.currency,
-        trm: selectedRoom.pricing.trm,
-      },
-    };
-    onConfirm(item);
+    const nights = availability?.nights || computeNights(checkin, checkout);
+    const nLabel = `${nights} noche${nights !== 1 ? 's' : ''}`;
+    const items = [];
+
+    if (manualMode) {
+      for (const r of validManualRooms()) {
+        items.push({
+          name: `${hotelName} — ${r.roomName} (${r.nights} noche${r.nights !== 1 ? 's' : ''})`,
+          qty: 1,
+          unitPrice: r.pricePerNight * r.nights,
+          discount: 0,
+          subtotal: r.pricePerNight * r.nights,
+          booking: {
+            city, hotelId, hotelName,
+            roomId: null, roomName: r.roomName,
+            checkin, checkout, nights: r.nights,
+            adults, childrenAges,
+            boardTypeDescription: '', refundable: '', cancellationPolicy: '',
+            currency: 'COP', trm: null,
+            bankAccountKey: bankKey || undefined,
+          },
+        });
+      }
+    } else {
+      for (const [idx, qty] of Object.entries(roomQuantities)) {
+        const room = availability.rooms[idx];
+        if (!room || qty <= 0) continue;
+        items.push({
+          name: `${hotelName} — ${room.roomName} (${nLabel})`,
+          qty,
+          unitPrice: room.pricing.amountBeforeTax,
+          discount: 0,
+          subtotal: room.pricing.amountBeforeTax * qty,
+          booking: {
+            city, hotelId, hotelName,
+            roomId: room.roomId, roomName: room.roomName,
+            checkin: availability.checkin, checkout: availability.checkout, nights,
+            adults: availability.adults, childrenAges: availability.childrenAges,
+            boardTypeDescription: room.pricing.boardTypeDescription,
+            refundable: room.pricing.refundable,
+            cancellationPolicy: room.pricing.cancellationPolicy,
+            currency: room.pricing.currency,
+            trm: room.pricing.trm,
+            bankAccountKey: bankKey || undefined,
+          },
+        });
+      }
+    }
+
+    if (items.length === 0) return;
+    onConfirm(items);
   }
+
+  const canConfirm = manualMode
+    ? validManualRooms().length > 0 && !!bankKey && !submitting
+    : totalSelectedRooms() > 0 && !!bankKey && !submitting;
+
+  const confirmCount = manualMode ? validManualRooms().length : totalSelectedRooms();
+  const nights = availability?.nights || computeNights(checkin, checkout);
 
   return (
     <div className="hwiz-overlay">
@@ -189,7 +268,7 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
           <h2 className="hwiz__title">
             {step === 1 && 'Seleccionar hotel'}
             {step === 2 && 'Fechas y huéspedes'}
-            {step === 3 && 'Habitaciones disponibles'}
+            {step === 3 && (manualMode ? 'Agregar habitaciones (manual)' : 'Habitaciones disponibles')}
           </h2>
           <button className="hwiz__close" onClick={onCancel} aria-label="Cerrar">×</button>
         </div>
@@ -236,23 +315,17 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
               <div className="form-group">
                 <label className="form-label">Check-in *</label>
                 <input
-                  className="form-input"
-                  type="date"
-                  value={checkin}
-                  min={todayYMD()}
+                  className="form-input" type="date" value={checkin} min={todayYMD()}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    setCheckin(value);
-                    if (checkout && value && checkout <= value) setCheckout('');
+                    setCheckin(e.target.value);
+                    if (checkout && e.target.value && checkout <= e.target.value) setCheckout('');
                   }}
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Check-out *</label>
                 <input
-                  className="form-input"
-                  type="date"
-                  value={checkout}
+                  className="form-input" type="date" value={checkout}
                   min={checkin ? addDaysYMD(checkin, 1) : todayYMD()}
                   onChange={(e) => setCheckout(e.target.value)}
                 />
@@ -278,14 +351,7 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
                   {childrenAges.map((age, i) => (
                     <div key={i} className="form-group">
                       <label className="form-label hwiz__age-label">Menor {i + 1}</label>
-                      <input
-                        className="form-input"
-                        type="number"
-                        min="0"
-                        max="17"
-                        value={age}
-                        onChange={(e) => handleChildAgeChange(i, e.target.value)}
-                      />
+                      <input className="form-input" type="number" min="0" max="17" value={age} onChange={(e) => handleChildAgeChange(i, e.target.value)} />
                     </div>
                   ))}
                 </div>
@@ -300,58 +366,137 @@ export default function HotelBookingWizard({ onConfirm, onCancel }) {
           </div>
         )}
 
-        {/* STEP 3 — Selección de habitación */}
+        {/* STEP 3 — Selección de habitaciones */}
         {step === 3 && availability && (
           <div className="hwiz__body">
             <HotelPreview hotelId={hotelId} hotelName={hotelName} city={city} compact />
             {error && <p className="form-error hwiz__error">{error}</p>}
             <p className="hwiz__availability-summary">
-              {hotelName} · {availability.nights} noche{availability.nights !== 1 ? 's' : ''} · {availability.adults} adulto{availability.adults !== 1 ? 's' : ''}
-              {availability.childrenAges.length > 0 && ` · ${availability.childrenAges.length} menor${availability.childrenAges.length !== 1 ? 'es' : ''}`}
+              {hotelName} · {nights} noche{nights !== 1 ? 's' : ''} · {adults} adulto{adults !== 1 ? 's' : ''}
+              {childrenAges.length > 0 && ` · ${childrenAges.length} menor${childrenAges.length !== 1 ? 'es' : ''}`}
+              {manualMode && ' · Modo manual'}
             </p>
-            <div className="hwiz__rooms">
-              {availability.rooms.map((room, i) => {
-                const roomImageUrl = getRoomImageUrl(hotelId, room.roomId);
-                return (
-                <button
-                  key={`${room.roomId}-${i}`}
-                  className={`hwiz__room-card${selectedRoom === room ? ' hwiz__room-card--selected' : ''}${!room.available ? ' hwiz__room-card--unavailable' : ''}`}
-                  onClick={() => room.available && setSelectedRoom(room)}
-                  disabled={!room.available}
-                >
-                  <div className="hwiz__room-card-inner">
-                    {roomImageUrl ? (
-                      <img className="hwiz__room-image" src={roomImageUrl} alt={room.roomName} loading="lazy" />
-                    ) : (
-                      <div className="hwiz__room-image hwiz__room-image--placeholder" aria-hidden="true" />
-                    )}
-                    <div className="hwiz__room-details">
-                      <div className="hwiz__room-name">{room.roomName}</div>
-                      {room.available ? (
-                        <>
-                          <div className="hwiz__room-price">{formatCOP(room.pricing.amountBeforeTax)}<span className="hwiz__room-tax"> + IVA 19%</span></div>
-                          <div className="hwiz__room-total">Total: {formatCOP(room.pricing.amountAfterTax)}</div>
-                          <div className="hwiz__room-meta">
-                            {room.pricing.boardTypeDescription !== 'NO ESPECIFICADO' && (
-                              <span className="hwiz__room-board">{room.pricing.boardTypeDescription}</span>
-                            )}
-                            <span className={`hwiz__room-refund hwiz__room-refund--${room.pricing.refundable}`}>
-                              {room.pricing.refundable === 'full' ? 'Reembolsable' : room.pricing.refundable === 'partial' ? 'Cancelación parcial' : 'No reembolsable'}
-                            </span>
-                          </div>
-                        </>
+
+            {/* API rooms with quantity selectors */}
+            {!manualMode && (
+              <div className="hwiz__rooms">
+                {availability.rooms.map((room, i) => {
+                  const roomImageUrl = getRoomImageUrl(hotelId, room.roomId);
+                  const qty = roomQuantities[i] || 0;
+                  return (
+                  <div
+                    key={`${room.roomId}-${i}`}
+                    className={`hwiz__room-card${qty > 0 ? ' hwiz__room-card--selected' : ''}${!room.available ? ' hwiz__room-card--unavailable' : ''}`}
+                  >
+                    <div className="hwiz__room-card-inner">
+                      {roomImageUrl ? (
+                        <img className="hwiz__room-image" src={roomImageUrl} alt={room.roomName} loading="lazy" />
                       ) : (
-                        <div className="hwiz__room-unavailable">No disponible</div>
+                        <div className="hwiz__room-image hwiz__room-image--placeholder" aria-hidden="true" />
                       )}
+                      <div className="hwiz__room-details">
+                        <div className="hwiz__room-name">{room.roomName}</div>
+                        {room.available ? (
+                          <>
+                            <div className="hwiz__room-price">{formatCOP(room.pricing.amountBeforeTax)}<span className="hwiz__room-tax"> + IVA 19%</span></div>
+                            <div className="hwiz__room-total">Total: {formatCOP(room.pricing.amountAfterTax)}</div>
+                            <div className="hwiz__room-meta">
+                              {room.pricing.boardTypeDescription !== 'NO ESPECIFICADO' && (
+                                <span className="hwiz__room-board">{room.pricing.boardTypeDescription}</span>
+                              )}
+                              <span className={`hwiz__room-refund hwiz__room-refund--${room.pricing.refundable}`}>
+                                {room.pricing.refundable === 'full' ? 'Reembolsable' : room.pricing.refundable === 'partial' ? 'Cancelación parcial' : 'No reembolsable'}
+                              </span>
+                            </div>
+                            <div className="hwiz__room-qty">
+                              <button type="button" className="hwiz__qty-btn" onClick={() => decrementRoom(i)} disabled={qty === 0}>−</button>
+                              <span className="hwiz__qty-value">{qty}</span>
+                              <button type="button" className="hwiz__qty-btn" onClick={() => incrementRoom(i)}>+</button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="hwiz__room-unavailable">No disponible</div>
+                        )}
+                      </div>
                     </div>
                   </div>
+                );})}
+              </div>
+            )}
+
+            <label className="hwiz__manual-toggle">
+              <input type="checkbox" checked={manualMode} onChange={(e) => {
+                setManualMode(e.target.checked);
+                if (e.target.checked && manualRooms.length === 0) {
+                  addManualRoom();
+                }
+                setRoomQuantities({});
+              }} />
+              No hay disponibilidad / Modo manual
+            </label>
+
+            {/* Manual rooms form */}
+            {manualMode && (
+              <div className="hwiz__manual-rooms">
+                {manualRooms.map((r, i) => {
+                  const subtotal = r.pricePerNight * r.nights;
+                  const iva = Math.round(subtotal * 0.19);
+                  const total = subtotal + iva;
+                  return (
+                  <div key={i} className="hwiz__manual-room-row">
+                    <div className="form-group">
+                      <label className="form-label">Habitación</label>
+                      <input className="form-input" placeholder="Ej: Doble Standard" value={r.roomName} onChange={(e) => updateManualRoom(i, 'roomName', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Precio/noche</label>
+                      <input className="form-input" type="number" min="0" value={r.pricePerNight || ''} onChange={(e) => updateManualRoom(i, 'pricePerNight', parseFloat(e.target.value) || 0)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Noches</label>
+                      <input className="form-input" type="number" min="1" value={r.nights} onChange={(e) => updateManualRoom(i, 'nights', parseInt(e.target.value, 10) || 1)} />
+                    </div>
+                    <div className="hwiz__manual-room-total">
+                      <div>{formatCOP(subtotal)}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>IVA 19%: {formatCOP(iva)}</div>
+                      <div style={{ fontWeight: 'var(--font-bold)' }}>Total: {formatCOP(total)}</div>
+                    </div>
+                    <button type="button" className="btn btn--danger btn--sm" onClick={() => removeManualRoom(i)} title="Eliminar">×</button>
+                  </div>
+                );})}
+                <button type="button" className="hwiz__add-manual-room" onClick={addManualRoom}>
+                  + Agregar habitación
                 </button>
-              );})}
+              </div>
+            )}
+
+            <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
+              <label className="form-label">Cuenta bancaria para transferencia *</label>
+              <select className="form-input" value={bankKey} onChange={(e) => setBankKey(e.target.value)}>
+                <option value="">Selecciona una cuenta</option>
+                {Object.entries(BANK_ACCOUNTS).map(([key, { label, accounts }]) => (
+                  <option key={key} value={key}>
+                    {label} — {accounts.map((a) => `${a.banco}: ${a.numero}`).join(' / ')}
+                  </option>
+                ))}
+              </select>
+              {bankKey && BANK_ACCOUNTS[bankKey] && (
+                <div className="hwiz__bank-preview">
+                  {BANK_ACCOUNTS[bankKey].accounts.map((a, i) => (
+                    <div key={i} className="hwiz__bank-item">
+                      <strong>{a.banco}</strong>
+                      <span>Titular: {a.titular}</span>
+                      <span>{a.tipo} Nº {a.numero}</span>
+                      {a.nit && <span>NIT: {a.nit}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="hwiz__footer">
-              <button className="btn btn--secondary" onClick={() => { setStep(2); setAvailability(null); setSelectedRoom(null); }}>← Atrás</button>
-              <button className="btn btn--primary" onClick={confirmar} disabled={!selectedRoom}>
-                Confirmar reserva
+              <button className="btn btn--secondary" onClick={() => { setStep(2); setAvailability(null); setRoomQuantities({}); setManualRooms([]); }}>← Atrás</button>
+              <button className="btn btn--primary" onClick={confirmar} disabled={!canConfirm}>
+                {submitting ? 'Creando...' : `Confirmar ${confirmCount} habitación${confirmCount !== 1 ? 'es' : ''}`}
               </button>
             </div>
           </div>

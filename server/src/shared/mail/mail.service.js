@@ -85,8 +85,15 @@ export async function sendQuoteEmail({ quote, publicUrl, senderName }) {
     console.error('Error generando PDF, se enviará sin adjunto:', err.message);
   }
 
+  const primaryHotel = (quote.items || []).find((i) => i.booking?.hotelName)?.booking?.hotelName;
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}_${String(now.getMonth() + 1).padStart(2, '0')}_${now.getFullYear()}`;
+  const pdfName = primaryHotel
+    ? `CONFIRMACION DE RESERVA ${primaryHotel.toUpperCase()}  ${dateStr}.pdf`
+    : `Cotizacion ${dateStr}.pdf`;
+
   const attachments = pdfBuffer
-    ? [{ filename: 'cotizacion.pdf', contentType: 'application/pdf', content: pdfBuffer }]
+    ? [{ filename: pdfName, contentType: 'application/pdf', content: pdfBuffer }]
     : [];
 
   const raw = encodeMimeMessage({ to, from, subject, html, text, attachments });

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import './QuoteEditor.css';
 import HotelBookingWizard from './HotelBookingWizard.jsx';
 
@@ -107,10 +108,18 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
   async function handleSend() {
     const email = quote?.client?.email;
     if (!email) {
-      setError('El cliente no tiene email configurado.');
+      Swal.fire({ icon: 'warning', title: 'Sin email', text: 'El cliente no tiene email configurado.' });
       return;
     }
-    if (!window.confirm(`¿Enviar cotización a ${email}?`)) return;
+    const { isConfirmed } = await Swal.fire({
+      title: '¿Enviar cotización?',
+      text: `Se enviará la cotización a ${email}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!isConfirmed) return;
 
     setSaving(true);
     setError('');
@@ -124,18 +133,27 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Error enviando');
       setQuote(body.data.quote);
-      setSuccessMsg('Cotización enviada por correo ✓');
-      setTimeout(() => setSuccessMsg(''), 3000);
+      Swal.fire({ icon: 'success', title: 'Enviada', text: 'Cotización enviada por correo', timer: 2500, showConfirmButton: false });
       startCooldown();
     } catch (err) {
-      setError(err.message);
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete() {
-    if (!window.confirm('¿Eliminar esta cotización? Esta acción no se puede deshacer.')) return;
+    const clientLabel = [quote?.client?.name, quote?.client?.company].filter(Boolean).join(' — ');
+    const { isConfirmed } = await Swal.fire({
+      title: '¿Eliminar cotización?',
+      text: `${clientLabel ? `Cotización de ${clientLabel}. ` : ''}Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!isConfirmed) return;
 
     setSaving(true);
     setError('');
@@ -271,9 +289,12 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
 
       {showHotelWizard && (
         <HotelBookingWizard
-          onConfirm={(item) => {
-            const newItem = { ...item, _id: `new-${Date.now()}` };
-            const newItems = [...items, newItem];
+          onConfirm={(newRoomItems) => {
+            const timestamped = newRoomItems.map((item, i) => ({
+              ...item,
+              _id: `new-${Date.now()}-${i}`,
+            }));
+            const newItems = [...items, ...timestamped];
             setItems(newItems);
             saveItems(newItems);
             setShowHotelWizard(false);
