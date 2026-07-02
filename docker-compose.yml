@@ -3,7 +3,7 @@ services:
     build:
       context: .
       target: server
-    env_file: .env
+    env_file: server/.env
     ports:
       - "3000:3000"
     restart: unless-stopped

@@ -9,6 +9,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <p class="login-page__subtitle">Plataforma de cotizaciones inteligentes</p>
       </div>
 
+      <!-- Formulario de login -->
       <form id="login-form" class="login-page__form">
         <div class="form-group">
           <label class="form-label" for="email">Correo electrónico</label>
@@ -22,37 +23,126 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <button type="submit" class="btn btn--primary login-page__submit" id="login-btn">
           Iniciar sesión
         </button>
+        <div class="login-page__divider"></div>
+        <p class="login-page__toggle-text">
+          ¿No tienes cuenta?
+          <button type="button" class="login-page__toggle-link" id="go-to-register">Registrarse</button>
+        </p>
+      </form>
+
+      <!-- Formulario de registro -->
+      <form id="register-form" class="login-page__form" style="display:none;">
+        <div class="form-group">
+          <label class="form-label" for="reg-name">Nombre completo</label>
+          <input class="form-input" type="text" id="reg-name" name="name" required minlength="2" autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-email">Correo electrónico</label>
+          <input class="form-input" type="email" id="reg-email" name="email" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-password">Contraseña</label>
+          <input class="form-input" type="password" id="reg-password" name="password" required minlength="6" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-confirm">Confirmar contraseña</label>
+          <input class="form-input" type="password" id="reg-confirm" name="confirm" required autocomplete="new-password" />
+        </div>
+        <div id="register-error" class="form-error" style="display:none;"></div>
+        <button type="submit" class="btn btn--primary login-page__submit" id="register-btn">
+          Crear cuenta
+        </button>
+        <div class="login-page__divider"></div>
+        <p class="login-page__toggle-text">
+          ¿Ya tienes cuenta?
+          <button type="button" class="login-page__toggle-link" id="go-to-login">Iniciar sesión</button>
+        </p>
       </form>
     </div>
   </div>
 </BaseLayout>
 
 <script>
-  import { login, isAuthenticated, ensureWorkspaceId } from '../lib/auth.js';
+  import Swal from 'sweetalert2';
+  import { login, register, isAuthenticated, ensureWorkspaceId } from '../lib/auth.js';
 
   if (isAuthenticated()) window.location.href = '/app';
 
-  const form = document.getElementById('login-form');
-  const errorEl = document.getElementById('login-error');
-  const submitBtn = document.getElementById('login-btn');
+  const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
+  const registerForm = document.getElementById('register-form') as HTMLFormElement | null;
+  const loginError = document.getElementById('login-error') as HTMLElement | null;
+  const registerError = document.getElementById('register-error') as HTMLElement | null;
+  const loginBtn = document.getElementById('login-btn') as HTMLButtonElement | null;
+  const registerBtn = document.getElementById('register-btn') as HTMLButtonElement | null;
 
-  form?.addEventListener('submit', async (e) => {
+  document.getElementById('go-to-register')?.addEventListener('click', () => {
+    if (loginForm) loginForm.style.display = 'none';
+    if (registerForm) registerForm.style.display = 'flex';
+    if (loginError) loginError.style.display = 'none';
+  });
+
+  document.getElementById('go-to-login')?.addEventListener('click', () => {
+    if (registerForm) registerForm.style.display = 'none';
+    if (loginForm) loginForm.style.display = 'flex';
+    if (registerError) registerError.style.display = 'none';
+  });
+
+  loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    errorEl.style.display = 'none';
-    submitBtn.textContent = 'Entrando...';
-    submitBtn.disabled = true;
+    if (!loginForm || !loginError || !loginBtn) return;
+    loginError.style.display = 'none';
+    loginBtn.textContent = 'Entrando...';
+    loginBtn.disabled = true;
 
     try {
-      await login(form.email.value, form.password.value);
-
-      // Cargar workspace por defecto
+      await login(loginForm.email.value, loginForm.password.value);
       await ensureWorkspaceId();
       window.location.href = '/app';
     } catch (err) {
-      errorEl.textContent = err.message || 'Error al iniciar sesión';
-      errorEl.style.display = 'block';
-      submitBtn.textContent = 'Iniciar sesión';
-      submitBtn.disabled = false;
+      loginError.textContent = (err as Error).message || 'Error al iniciar sesión';
+      loginError.style.display = 'block';
+      loginBtn.textContent = 'Iniciar sesión';
+      loginBtn.disabled = false;
+    }
+  });
+
+  registerForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!registerForm || !registerError || !registerBtn || !loginForm) return;
+    registerError.style.display = 'none';
+
+    const name = (registerForm.elements.namedItem('name') as HTMLInputElement).value.trim();
+    const email = (registerForm.elements.namedItem('email') as HTMLInputElement).value.trim();
+    const password = (registerForm.elements.namedItem('password') as HTMLInputElement).value;
+    const confirm = (registerForm.elements.namedItem('confirm') as HTMLInputElement).value;
+
+    if (password !== confirm) {
+      registerError.textContent = 'Las contraseñas no coinciden';
+      registerError.style.display = 'block';
+      return;
+    }
+
+    registerBtn.textContent = 'Creando cuenta...';
+    registerBtn.disabled = true;
+
+    try {
+      await register(name, email, password);
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Cuenta creada!',
+        text: 'Tu cuenta fue creada exitosamente. Ahora puedes iniciar sesión.',
+        confirmButtonColor: '#cd964d',
+        confirmButtonText: 'Iniciar sesión',
+      });
+      registerForm.reset();
+      registerForm.style.display = 'none';
+      loginForm.style.display = 'flex';
+    } catch (err) {
+      registerError.textContent = (err as Error).message || 'Error al crear la cuenta';
+      registerError.style.display = 'block';
+    } finally {
+      registerBtn.textContent = 'Crear cuenta';
+      registerBtn.disabled = false;
     }
   });
 </script>
@@ -69,4 +159,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .login-page__subtitle { color: var(--color-text-muted); margin-top: var(--space-2); }
   .login-page__form { display: flex; flex-direction: column; gap: var(--space-5); }
   .login-page__submit { width: 100%; justify-content: center; padding: var(--space-3); }
+  .login-page__divider { border: none; border-top: 1px solid var(--color-border); margin: 0; }
+  .login-page__toggle-text { text-align: center; font-size: var(--text-sm); color: var(--color-text-muted); margin: 0; }
+  .login-page__toggle-link {
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--color-primary); font-size: var(--text-sm); font-weight: var(--font-medium);
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .login-page__toggle-link:hover { color: var(--color-primary-dark); }
 </style>

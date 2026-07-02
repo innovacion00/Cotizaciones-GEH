@@ -25,6 +25,10 @@ export async function login(email, password) {
   return data;
 }
 
+export async function register(name, email, password) {
+  return api.post('/api/v1/auth/register', { name, email, password });
+}
+
 export async function logout() {
   try {
     await api.post('/api/v1/auth/logout', {});
