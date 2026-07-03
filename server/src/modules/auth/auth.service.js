@@ -2,7 +2,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from './user.model.js';
 import { env } from '../../config/env.js';
-import { AppError, UnauthorizedError } from '../../shared/errors/AppError.js';
+import { AppError, NotFoundError, UnauthorizedError } from '../../shared/errors/AppError.js';
+import { createWorkspace, joinWorkspace } from '../workspaces/workspaces.service.js';
 
 const ACCESS_EXPIRY = '15m';
 const REFRESH_EXPIRY = '7d';
@@ -21,6 +22,27 @@ export async function registerUser({ name, email, password, role }) {
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   const user = await User.create({ name, email, passwordHash, role });
+
+  let joinedDefault = false;
+  if (env.DEFAULT_WORKSPACE_ID) {
+    try {
+      await joinWorkspace(env.DEFAULT_WORKSPACE_ID, user._id.toString(), 'sales');
+      joinedDefault = true;
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) throw err;
+    }
+  }
+
+  if (!joinedDefault) {
+    const baseSlug = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'workspace';
+    const slug = `${baseSlug}-${user._id.toString().slice(-6)}`;
+    await createWorkspace({ name: `Workspace de ${name}`, slug }, user._id.toString());
+  }
 
   const tokens = generateTokens(user._id.toString(), user.role);
   return { user: { id: user._id, name: user.name, email: user.email, role: user.role }, ...tokens };

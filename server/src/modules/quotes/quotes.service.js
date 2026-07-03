@@ -42,9 +42,15 @@ async function assertWorkspaceMember(workspaceId, userId) {
   return ws;
 }
 
+function memberRole(ws, userId) {
+  return ws.members.find((m) => m.user.toString() === userId)?.role;
+}
+
 async function findQuote(quoteId, workspaceId, userId) {
-  await assertWorkspaceMember(workspaceId, userId);
-  const quote = await Quote.findOne({ _id: quoteId, workspace: workspaceId });
+  const ws = await assertWorkspaceMember(workspaceId, userId);
+  const filter = { _id: quoteId, workspace: workspaceId };
+  if (memberRole(ws, userId) === 'sales') filter.owner = userId;
+  const quote = await Quote.findOne(filter);
   if (!quote) throw new NotFoundError('Cotización');
   return quote;
 }
@@ -57,8 +63,9 @@ export async function createQuote(workspaceId, userId, data) {
 }
 
 export async function listQuotes(workspaceId, userId, { page = 1, limit = 20, status } = {}) {
-  await assertWorkspaceMember(workspaceId, userId);
+  const ws = await assertWorkspaceMember(workspaceId, userId);
   const filter = { workspace: workspaceId };
+  if (memberRole(ws, userId) === 'sales') filter.owner = userId;
   if (status) filter.status = status;
 
   const [quotes, total] = await Promise.all([

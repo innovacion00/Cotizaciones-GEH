@@ -5,8 +5,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   <div class="login-page">
     <div class="login-page__card card">
       <div class="login-page__header">
-        <h1 class="login-page__title">Cotizador</h1>
-        <p class="login-page__subtitle">Plataforma de cotizaciones inteligentes</p>
+        <h1 class="login-page__title">GEH Cotizador</h1>
+        <p class="login-page__subtitle">Plataforma de cotizaciones de Geh Suites</p>
       </div>
 
       <!-- Formulario de login -->
@@ -46,7 +46,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </div>
         <div class="form-group">
           <label class="form-label" for="reg-confirm">Confirmar contraseña</label>
-          <input class="form-input" type="password" id="reg-confirm" name="confirm" required autocomplete="new-password" />
+        <input class="form-input" type="password" id="reg-confirm" name="confirm" required autocomplete="new-password" />
         </div>
         <div id="register-error" class="form-error" style="display:none;"></div>
         <button type="submit" class="btn btn--primary login-page__submit" id="register-btn">
@@ -68,28 +68,27 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   if (isAuthenticated()) window.location.href = '/app';
 
-  const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
-  const registerForm = document.getElementById('register-form') as HTMLFormElement | null;
-  const loginError = document.getElementById('login-error') as HTMLElement | null;
-  const registerError = document.getElementById('register-error') as HTMLElement | null;
-  const loginBtn = document.getElementById('login-btn') as HTMLButtonElement | null;
-  const registerBtn = document.getElementById('register-btn') as HTMLButtonElement | null;
+  const loginForm = document.getElementById('login-form');
+  const registerForm = document.getElementById('register-form');
+  const loginError = document.getElementById('login-error');
+  const registerError = document.getElementById('register-error');
+  const loginBtn = document.getElementById('login-btn');
+  const registerBtn = document.getElementById('register-btn');
 
   document.getElementById('go-to-register')?.addEventListener('click', () => {
-    if (loginForm) loginForm.style.display = 'none';
-    if (registerForm) registerForm.style.display = 'flex';
-    if (loginError) loginError.style.display = 'none';
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'flex';
+    loginError.style.display = 'none';
   });
 
   document.getElementById('go-to-login')?.addEventListener('click', () => {
-    if (registerForm) registerForm.style.display = 'none';
-    if (loginForm) loginForm.style.display = 'flex';
-    if (registerError) registerError.style.display = 'none';
+    registerForm.style.display = 'none';
+    loginForm.style.display = 'flex';
+    registerError.style.display = 'none';
   });
 
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!loginForm || !loginError || !loginBtn) return;
     loginError.style.display = 'none';
     loginBtn.textContent = 'Entrando...';
     loginBtn.disabled = true;
@@ -99,7 +98,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       await ensureWorkspaceId();
       window.location.href = '/app';
     } catch (err) {
-      loginError.textContent = (err as Error).message || 'Error al iniciar sesión';
+      loginError.textContent = err.message || 'Error al iniciar sesión';
       loginError.style.display = 'block';
       loginBtn.textContent = 'Iniciar sesión';
       loginBtn.disabled = false;
@@ -108,13 +107,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   registerForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!registerForm || !registerError || !registerBtn || !loginForm) return;
     registerError.style.display = 'none';
 
-    const name = (registerForm.elements.namedItem('name') as HTMLInputElement).value.trim();
-    const email = (registerForm.elements.namedItem('email') as HTMLInputElement).value.trim();
-    const password = (registerForm.elements.namedItem('password') as HTMLInputElement).value;
-    const confirm = (registerForm.elements.namedItem('confirm') as HTMLInputElement).value;
+    const name = registerForm.name.value.trim();
+    const email = registerForm.email.value.trim();
+    const password = registerForm.password.value;
+    const confirm = registerForm.confirm.value;
 
     if (password !== confirm) {
       registerError.textContent = 'Las contraseñas no coinciden';
@@ -138,7 +136,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       registerForm.style.display = 'none';
       loginForm.style.display = 'flex';
     } catch (err) {
-      registerError.textContent = (err as Error).message || 'Error al crear la cuenta';
+      registerError.textContent = err.message || 'Error al crear la cuenta';
       registerError.style.display = 'block';
     } finally {
       registerBtn.textContent = 'Crear cuenta';

@@ -18,6 +18,19 @@ export async function createWorkspace({ name, slug, settings }, ownerId) {
   return workspace;
 }
 
+export async function joinWorkspace(workspaceId, userId, role = 'sales') {
+  const ws = await Workspace.findById(workspaceId);
+  if (!ws) throw new NotFoundError('Workspace');
+
+  const alreadyMember = ws.members.some((m) => m.user.toString() === userId);
+  if (!alreadyMember) {
+    ws.members.push({ user: userId, role });
+    await ws.save();
+  }
+  await User.findByIdAndUpdate(userId, { $addToSet: { workspaces: ws._id } });
+  return ws;
+}
+
 export async function listUserWorkspaces(userId) {
   return Workspace.find({ 'members.user': userId }).lean();
 }
@@ -58,6 +71,36 @@ export async function addMember(workspaceId, userId, { userId: targetId, role })
   ws.members.push({ user: targetId, role });
   await ws.save();
   await User.findByIdAndUpdate(targetId, { $addToSet: { workspaces: ws._id } });
+  return ws;
+}
+
+export async function listMembers(workspaceId, userId) {
+  const ws = await Workspace.findById(workspaceId).populate('members.user', 'name email').lean();
+  if (!ws) throw new NotFoundError('Workspace');
+  const isMember = ws.members.some((m) => m.user._id.toString() === userId);
+  if (!isMember) throw new ForbiddenError('No eres miembro de este workspace');
+  return ws.members;
+}
+
+export async function updateMemberRole(workspaceId, requesterId, targetId, role) {
+  const ws = await Workspace.findById(workspaceId);
+  if (!ws) throw new NotFoundError('Workspace');
+  assertAdmin(ws, requesterId);
+
+  const member = ws.members.find((m) => m.user.toString() === targetId);
+  if (!member) throw new NotFoundError('Miembro');
+
+  if (ws.owner.toString() === targetId && role !== 'admin') {
+    throw new ForbiddenError('El propietario del workspace debe mantener el rol admin');
+  }
+
+  if (member.role === 'admin' && role !== 'admin') {
+    const otherAdmins = ws.members.some((m) => m.role === 'admin' && m.user.toString() !== targetId);
+    if (!otherAdmins) throw new ForbiddenError('Debe quedar al menos un admin en el workspace');
+  }
+
+  member.role = role;
+  await ws.save();
   return ws;
 }
 

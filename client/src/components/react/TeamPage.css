@@ -1,0 +1,17 @@
+.team { display: flex; flex-direction: column; gap: var(--space-6); }
+.team__notice { color: var(--color-text-muted); font-size: var(--text-sm); }
+.team__loading, .team__error { color: var(--color-text-muted); padding: var(--space-8); text-align: center; }
+.team__error { color: var(--color-danger); }
+
+.team__header-row,
+.team__row {
+  display: grid; grid-template-columns: 1.2fr 1.5fr 160px;
+  align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4);
+}
+.team__header-row {
+  font-size: var(--text-xs); text-transform: uppercase; color: var(--color-text-muted);
+  font-weight: var(--font-medium); border-bottom: 1px solid var(--color-border);
+}
+.team__row { background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+.team__row:last-child { border-bottom: none; }
+.team__cell select { width: 100%; }

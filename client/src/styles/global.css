@@ -119,6 +119,9 @@ ul, ol { list-style: none; }
 .badge--accepted { background: #dcfce7; color: #16a34a; }
 .badge--rejected { background: #fee2e2; color: #dc2626; }
 .badge--expired  { background: #f3f4f6; color: #9ca3af; }
+.badge--admin    { background: #ede9fe; color: #6d28d9; }
+.badge--manager  { background: #dbeafe; color: #1d4ed8; }
+.badge--sales    { background: #f1f5f9; color: #475569; }
 
 /* Listas renderizadas dinámicamente vía innerHTML (no reciben scoping de Astro) */
 .cotizaciones__loading, .cotizaciones__empty, .cotizaciones__error { color: var(--color-text-muted); padding: var(--space-8); text-align: center; }

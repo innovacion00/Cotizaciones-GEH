@@ -55,6 +55,24 @@ export async function addMember(req, res, next) {
   }
 }
 
+export async function listMembers(req, res, next) {
+  try {
+    const members = await workspacesService.listMembers(req.params.id, req.user.sub);
+    return okResponse(res, { members });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function updateMemberRole(req, res, next) {
+  try {
+    const ws = await workspacesService.updateMemberRole(req.params.id, req.user.sub, req.params.memberId, req.body.role);
+    return okResponse(res, { workspace: ws });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 export async function removeMember(req, res, next) {
   try {
     const ws = await workspacesService.removeMember(req.params.id, req.user.sub, req.params.memberId);

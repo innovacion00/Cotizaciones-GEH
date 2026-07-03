@@ -36,3 +36,7 @@ export const addMemberSchema = Joi.object({
   userId: Joi.string().hex().length(24).required(),
   role: Joi.string().valid('admin', 'manager', 'sales').default('sales'),
 });
+
+export const updateMemberRoleSchema = Joi.object({
+  role: Joi.string().valid('admin', 'manager', 'sales').required(),
+});

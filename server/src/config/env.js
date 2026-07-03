@@ -13,6 +13,7 @@ export const env = {
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:4321',
   NODE_ENV: process.env.NODE_ENV || 'development',
+  DEFAULT_WORKSPACE_ID: process.env.DEFAULT_WORKSPACE_ID || '',
   AUTOCORE_API_URL: process.env.AUTOCORE_API_URL || '',
   AUTOCORE_API_KEY: process.env.AUTOCORE_API_KEY || '',
   AUTOCORE_BOOKING_URL: process.env.AUTOCORE_BOOKING_URL || 'https://api.autocore.pro',
