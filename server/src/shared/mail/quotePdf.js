@@ -2,6 +2,10 @@ import PDFDocument from 'pdfkit';
 import { getHotelImageUrl, getRoomImageUrl } from './images.js';
 import { BANK_ACCOUNTS } from './bankAccounts.js';
 
+const LOGO_URL = 'https://space-img.sfo3.digitaloceanspaces.com/Agencias/gehlogo.png';
+const LOGO_W = 130;
+const LOGO_H = 38.7;
+
 const GOLD = '#876c46';
 const DARK = '#333333';
 const WHITE = '#FFFFFF';
@@ -78,10 +82,16 @@ function sectionTitle(doc, text, y) {
 }
 
 // ─── Page 1: Cover ───────────────────────────────────────────────────────────
-function pageCover(doc, b, hotelImg) {
-  doc.font('Helvetica-Bold').fontSize(20).fillColor(GOLD).text('geh', M, M, { continued: true });
-  doc.font('Helvetica').text('suites');
-  doc.font('Helvetica').fontSize(9).fillColor(GOLD).text('Hotels', M, doc.y - 2);
+function pageCover(doc, b, hotelImg, logoImg) {
+  if (logoImg) {
+    try {
+      doc.image(logoImg, M, M, { width: LOGO_W, height: LOGO_H });
+    } catch { /* skip unreadable logo */ }
+  } else {
+    doc.font('Helvetica-Bold').fontSize(20).fillColor(GOLD).text('geh', M, M, { continued: true });
+    doc.font('Helvetica').text('suites');
+    doc.font('Helvetica').fontSize(9).fillColor(GOLD).text('Hotels', M, doc.y - 2);
+  }
 
   doc.save().roundedRect(PAGE_W - M - 185, M, 185, 38, 4).fill('#E8D5A8').restore();
   doc.font('Helvetica-Bold').fontSize(10).fillColor(GOLD);
@@ -409,7 +419,10 @@ export async function buildQuotePdf({ quote }) {
     }
   }
 
-  const fetched = await Promise.all(toFetch.map(({ url }) => fetchImg(url)));
+  const [logoImg, ...fetched] = await Promise.all([
+    fetchImg(LOGO_URL),
+    ...toFetch.map(({ url }) => fetchImg(url)),
+  ]);
   for (let i = 0; i < toFetch.length; i++) {
     if (fetched[i]) imageBuffers.set(toFetch[i].key, fetched[i]);
   }
@@ -424,7 +437,7 @@ export async function buildQuotePdf({ quote }) {
     const rKey = `r:${primary.booking.hotelId}:${primary.rooms[0]?.roomId}`;
     const rImg = imageBuffers.get(rKey);
 
-    pageCover(doc, primary.booking, hImg);
+    pageCover(doc, primary.booking, hImg, logoImg);
     pageWelcome(doc, primary.booking, clientName, rImg);
     pageDescription(doc, primary);
     const bankKey = primary.items[0]?.booking?.bankAccountKey

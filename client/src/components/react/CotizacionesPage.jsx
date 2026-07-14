@@ -154,6 +154,7 @@ export default function CotizacionesPage() {
               <span>Cliente</span>
               <span>Empresa</span>
               <span>Hotel</span>
+              <span>Responsable</span>
               <span>Estado</span>
               <span>Total</span>
               <span>Fecha</span>
@@ -166,6 +167,7 @@ export default function CotizacionesPage() {
                 <div className="cotizaciones__cell cotizaciones__cell--client">{q.client.name}</div>
                 <div className="cotizaciones__cell">{q.client.company || '—'}</div>
                 <div className="cotizaciones__cell">{hotelName}</div>
+                <div className="cotizaciones__cell">{q.owner?.name || '—'}</div>
                 <div className="cotizaciones__cell">
                   <span className={`badge badge--${q.status}`}>{q.status}</span>
                 </div>

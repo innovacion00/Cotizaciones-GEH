@@ -97,7 +97,7 @@ const LEGAL_NOTES = [
   'Si los niños que viajan no son hijos de los adultos que los representan deben contar con un permiso de los padres, autenticado en una notaría.',
 ];
 
-export function buildQuoteEmail({ quote, publicUrl, senderName }) {
+export function buildQuoteEmail({ quote }) {
   const clientName = quote.client?.name || 'Cliente';
   const items = quote.items || [];
   const totals = quote.totals || {};
@@ -195,21 +195,6 @@ export function buildQuoteEmail({ quote, publicUrl, senderName }) {
     </div>
     ` : ''}
 
-    <div style="text-align:center;margin:0 0 24px;">
-    <p style="margin:0 0 16px;text-align:center;">
-      ${senderName ? `${senderName} le ha compartido` : 'Le hemos compartido'} el detalle de su cotización en el siguiente enlace:
-    </p>
-    <p style="margin:0 0 16px;text-align:center;">
-      <a href="${publicUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;">
-        Ver cotización
-      </a>
-    </p>
-    <p style="color:#64748b;font-size:13px;margin:0;text-align:center;">
-      Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
-      <a href="${publicUrl}" style="color:#2563eb;">${publicUrl}</a>
-    </p>
-    </div>
-
     <p style="margin:0;text-align:left;">Quedamos atentos a sus comentarios.</p>
   </div>
 </body>
@@ -245,9 +230,6 @@ Tener en cuenta:
 ${LEGAL_NOTES.map((item) => `• ${item}`).join('\n')}
 
 ${items.length > 0 ? `Total: ${formatCurrency(totals.total)}\n` : ''}
-${senderName ? `${senderName} le ha compartido` : 'Le hemos compartido'} el detalle de su cotización:
-${publicUrl}
-
 Quedamos atentos a sus comentarios.
 `;
 

@@ -36,6 +36,8 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
   const [successMsg, setSuccessMsg] = useState('');
   const [error, setError] = useState('');
   const [showHotelWizard, setShowHotelWizard] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailInput, setEmailInput] = useState(initialQuote?.client?.email || '');
   const [sendCooldown, setSendCooldown] = useState(0);
   const cooldownRef = useRef(null);
 
@@ -142,6 +144,29 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
     }
   }
 
+  async function handleUpdateEmail(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`${apiUrl}/api/v1/quotes/${quote._id}?workspaceId=${workspaceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
+        body: JSON.stringify({ client: { ...quote.client, email: emailInput } }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'Error actualizando el correo');
+      setQuote(body.data.quote);
+      setShowEmailModal(false);
+      Swal.fire({ icon: 'success', title: 'Correo actualizado', timer: 1800, showConfirmButton: false });
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleDelete() {
     const clientLabel = [quote?.client?.name, quote?.client?.company].filter(Boolean).join(' — ');
     const { isConfirmed } = await Swal.fire({
@@ -179,6 +204,7 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
           <h2 className="quote-editor__client-name">{quote?.client?.name}</h2>
           {quote?.client?.company && <span className="quote-editor__client-company">{quote.client.company}</span>}
           <span className={`badge badge--${quote?.status}`}>{quote?.status}</span>
+          {quote?.owner?.name && <span className="quote-editor__owner">Responsable: {quote.owner.name}</span>}
         </div>
         <div className="quote-editor__actions">
           {error && <span className="quote-editor__error">{error}</span>}
@@ -187,6 +213,15 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
           <button className="btn btn--secondary" onClick={handleSave} disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
+          {!['draft', 'rejected', 'expired'].includes(quote?.status) && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => { setEmailInput(quote?.client?.email || ''); setShowEmailModal(true); }}
+            >
+              Editar correo
+            </button>
+          )}
           {['draft', 'rejected', 'expired'].includes(quote?.status) ? (
             <button className="btn btn--primary" onClick={handleSend} disabled={saving || sendCooldown > 0}>
               {saving ? 'Enviando...' : sendCooldown > 0 ? `Espera ${sendCooldown}s` : 'Enviar cotización'}
@@ -301,6 +336,35 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
           }}
           onCancel={() => setShowHotelWizard(false)}
         />
+      )}
+
+      {showEmailModal && (
+        <div className="modal">
+          <div className="modal__backdrop" onClick={() => setShowEmailModal(false)} />
+          <div className="modal__content card">
+            <h2 className="modal__title">Editar correo de envío</h2>
+            <form className="modal__form" onSubmit={handleUpdateEmail}>
+              <div className="form-group">
+                <label className="form-label">Email del cliente</label>
+                <input
+                  className="form-input"
+                  type="email"
+                  required
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                />
+              </div>
+              <div className="modal__actions">
+                <button type="button" className="btn btn--secondary" onClick={() => setShowEmailModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn--primary" disabled={saving}>
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

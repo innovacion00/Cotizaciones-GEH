@@ -89,7 +89,7 @@ export async function sendQuoteEmail({ quote, publicUrl, senderName }) {
   const now = new Date();
   const dateStr = `${String(now.getDate()).padStart(2, '0')}_${String(now.getMonth() + 1).padStart(2, '0')}_${now.getFullYear()}`;
   const pdfName = primaryHotel
-    ? `CONFIRMACION DE RESERVA ${primaryHotel.toUpperCase()}  ${dateStr}.pdf`
+    ? `COTIZACIÓN DE RESERVA ${primaryHotel.toUpperCase()}  ${dateStr}.pdf`
     : `Cotizacion ${dateStr}.pdf`;
 
   const attachments = pdfBuffer

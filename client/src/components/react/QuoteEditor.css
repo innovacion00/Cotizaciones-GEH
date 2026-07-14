@@ -4,6 +4,7 @@
 .quote-editor__client-info { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .quote-editor__client-name { font-size: var(--text-2xl); font-weight: var(--font-bold); }
 .quote-editor__client-company { color: var(--color-text-muted); }
+.quote-editor__owner { color: var(--color-text-muted); font-size: var(--text-sm); }
 .quote-editor__actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .quote-editor__error { color: var(--color-danger); font-size: var(--text-sm); }
 .quote-editor__saved { color: var(--color-success); font-size: var(--text-sm); font-weight: var(--font-medium); }
@@ -47,3 +48,10 @@
   font-size: var(--text-lg); font-weight: var(--font-bold);
   background: var(--color-primary); color: #fff; padding: var(--space-4) var(--space-5);
 }
+
+.modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; padding: var(--space-4); }
+.modal__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.4); }
+.modal__content { position: relative; width: calc(100% - var(--space-8)); max-width: 480px; z-index: 1; }
+.modal__title { font-size: var(--text-xl); font-weight: var(--font-semibold); margin-bottom: var(--space-6); }
+.modal__form { display: flex; flex-direction: column; gap: var(--space-4); }
+.modal__actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-2); }

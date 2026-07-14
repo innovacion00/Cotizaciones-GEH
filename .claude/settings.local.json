@@ -5,7 +5,15 @@
       "Bash(curl -s \"http://localhost:4321/src/components/react/HotelBookingWizard.jsx\")",
       "Bash(npm ls *)",
       "Bash(curl -s -o /tmp/equipo.html -w \"HTTP %{http_code}\\\\n\" http://localhost:4321/app/equipo)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(node -e ' *)",
+      "Bash(npm test *)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -o /tmp/cot.html -w \"HTTP %{http_code}\\\\n\" http://localhost:4321/app/cotizaciones)",
+      "Bash(curl -s -H 'Authorization: Bearer __CMDSUB_OUTPUT__' http://localhost:3000/api/v1/quotes/6a551df9a4d676ca32a27c91?workspaceId=6a289135514be82d4f7472e9)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(JSON.stringify\\(j.data.quote.owner\\)\\)}\\)\")",
+      "Bash(curl -s -o /dev/null -w \"cotizaciones: HTTP %{http_code}\\\\n\" http://localhost:4321/app/cotizaciones)",
+      "Bash(curl -s -o /dev/null -w \"editor: HTTP %{http_code}\\\\n\" http://localhost:4321/app/cotizaciones/6a551df9a4d676ca32a27c91)"
     ]
   }
 }
