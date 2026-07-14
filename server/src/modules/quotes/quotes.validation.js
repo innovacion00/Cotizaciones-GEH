@@ -4,7 +4,7 @@ const bookingSchema = Joi.object({
   city: Joi.string(),
   hotelId: Joi.string(),
   hotelName: Joi.string(),
-  roomId: Joi.string(),
+  roomId: Joi.string().allow(null),
   roomName: Joi.string(),
   checkin: Joi.string(),
   checkout: Joi.string(),
@@ -15,7 +15,7 @@ const bookingSchema = Joi.object({
   refundable: Joi.string().allow('', null),
   cancellationPolicy: Joi.string().allow('', null),
   currency: Joi.string(),
-  trm: Joi.number(),
+  trm: Joi.number().allow(null),
   bankAccountKey: Joi.string().allow('', null),
 }).unknown(true);
 
