@@ -14,7 +14,11 @@ function calculateTotals(items, taxRate = 0.16) {
     0
   );
   const subtotal = subtotalBeforeDiscount - discountAmount;
-  const tax = subtotal * taxRate;
+  // Solo las habitaciones (items con booking) llevan IVA; los adicionales no.
+  const taxableSubtotal = items
+    .filter((item) => item.booking)
+    .reduce((acc, item) => acc + item.unitPrice * item.qty * (1 - item.discount / 100), 0);
+  const tax = taxableSubtotal * taxRate;
   const total = subtotal + tax;
 
   return {

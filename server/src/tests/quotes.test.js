@@ -189,7 +189,41 @@ describe('PATCH /api/v1/quotes/:id/items', () => {
 
     expect(update.status).toBe(200);
     expect(update.body.data.quote.totals.subtotal).toBe(600);
-    expect(update.body.data.quote.totals.tax).toBeCloseTo(96, 0);
-    expect(update.body.data.quote.totals.total).toBeCloseTo(696, 0);
+    // Un producto adicional sin booking (habitación) no lleva IVA.
+    expect(update.body.data.quote.totals.tax).toBe(0);
+    expect(update.body.data.quote.totals.total).toBe(600);
+  });
+
+  it('aplica IVA solo a items con booking (habitaciones), no a adicionales', async () => {
+    const create = await request(app)
+      .post('/api/v1/quotes')
+      .query({ workspaceId })
+      .set('Authorization', `Bearer ${token}`)
+      .send({ client: { name: 'Cliente E' }, items: [], taxRate: 0.19 });
+
+    const quoteId = create.body.data.quote._id;
+
+    const update = await request(app)
+      .patch(`/api/v1/quotes/${quoteId}/items`)
+      .query({ workspaceId })
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        items: [
+          {
+            name: 'Habitación Doble',
+            qty: 1,
+            unitPrice: 1000,
+            discount: 0,
+            booking: { hotelId: 'h1', hotelName: 'Hotel Test', checkin: '2026-08-01', checkout: '2026-08-02', nights: 1 },
+          },
+          { name: 'Traslado aeropuerto', qty: 1, unitPrice: 500, discount: 0 },
+        ],
+      });
+
+    expect(update.status).toBe(200);
+    expect(update.body.data.quote.totals.subtotal).toBe(1500);
+    // Solo la habitación (1000) lleva IVA 19%, el adicional (500) no.
+    expect(update.body.data.quote.totals.tax).toBeCloseTo(190, 0);
+    expect(update.body.data.quote.totals.total).toBeCloseTo(1690, 0);
   });
 });

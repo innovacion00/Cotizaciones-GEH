@@ -281,15 +281,20 @@ function pagePricing(doc, items, totals, taxRate, checkinYmd) {
 
     const pricePerNight = b?.nights ? Math.round(item.unitPrice / (b.nights * (item.qty || 1))) : item.unitPrice;
     const subtotalNoTax = item.subtotal;
-    const itemTax = subtotalNoTax * (taxRate ?? 0.19);
-    const subtotalWithTax = Math.round(subtotalNoTax + itemTax);
 
     const rows = [];
     if (b?.nights) {
       rows.push(['Precio de habitación por noche:', fmt$(pricePerNight)]);
     }
-    rows.push(['Precio total sin impuestos:', fmt$(subtotalNoTax)]);
-    rows.push(['Precio total con impuestos:', fmt$(subtotalWithTax)]);
+    if (b) {
+      // Solo las habitaciones llevan IVA; los adicionales no.
+      const itemTax = subtotalNoTax * (taxRate ?? 0.19);
+      const subtotalWithTax = Math.round(subtotalNoTax + itemTax);
+      rows.push(['Precio total sin impuestos:', fmt$(subtotalNoTax)]);
+      rows.push(['Precio total con impuestos:', fmt$(subtotalWithTax)]);
+    } else {
+      rows.push(['Precio total:', fmt$(subtotalNoTax)]);
+    }
 
     for (let i = 0; i < rows.length; i++) {
       const [label, val] = rows[i];
