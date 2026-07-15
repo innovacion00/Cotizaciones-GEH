@@ -13,6 +13,7 @@ export default function CotizacionesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [view, setView] = useState('active');
   const [showClientModal, setShowClientModal] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -58,6 +59,13 @@ export default function CotizacionesPage() {
     return () => { cancelled = true; };
   }, [loadQuotes]);
 
+  function switchView(nextView) {
+    if (nextView === view) return;
+    setView(nextView);
+    setStatusFilter('');
+    loadQuotes(nextView === 'archived' ? 'archived' : '');
+  }
+
   function openClientModal() {
     setClientForm({ clientName: '', clientCompany: '', clientEmail: '', clientPhone: '', isForeigner: false });
     setShowClientModal(true);
@@ -96,22 +104,31 @@ export default function CotizacionesPage() {
     }
   }
 
-  async function handleDeleteQuote(quoteId, clientName) {
+  async function handleArchiveQuote(quoteId, clientName) {
     const { isConfirmed } = await Swal.fire({
-      title: '¿Eliminar cotización?',
-      text: `¿Eliminar la cotización de ${clientName}? Esta acción no se puede deshacer.`,
+      title: '¿Archivar cotización?',
+      text: `La cotización de ${clientName} se moverá a Archivadas. Puedes restaurarla luego.`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      confirmButtonText: 'Eliminar',
+      confirmButtonColor: '#112733',
+      confirmButtonText: 'Archivar',
       cancelButtonText: 'Cancelar',
     });
     if (!isConfirmed) return;
     try {
-      await api.delete(`/api/v1/quotes/${quoteId}?workspaceId=${workspaceId}`);
+      await api.patch(`/api/v1/quotes/${quoteId}?workspaceId=${workspaceId}`, { status: 'archived' });
       await loadQuotes(statusFilter);
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Error', text: `Error al eliminar: ${err.message}` });
+      Swal.fire({ icon: 'error', title: 'Error', text: `Error al archivar: ${err.message}` });
+    }
+  }
+
+  async function handleRestoreQuote(quoteId) {
+    try {
+      await api.patch(`/api/v1/quotes/${quoteId}?workspaceId=${workspaceId}`, { status: 'draft' });
+      await loadQuotes('archived');
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: `Error al restaurar: ${err.message}` });
     }
   }
 
@@ -125,23 +142,43 @@ export default function CotizacionesPage() {
           </svg>
           Nueva cotización
         </button>
-        <div className="cotizaciones__filters">
-          <select
-            className="form-input"
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              loadQuotes(e.target.value);
-            }}
-          >
-            <option value="">Todos los estados</option>
-            <option value="draft">Borrador</option>
-            <option value="sent">Enviada</option>
-            <option value="viewed">Vista</option>
-            <option value="accepted">Aceptada</option>
-            <option value="rejected">Rechazada</option>
-            <option value="expired">Expirada</option>
-          </select>
+        <div className="cotizaciones__toolbar-right">
+          <div className="cotizaciones__view-tabs">
+            <button
+              type="button"
+              className={`btn btn--sm ${view === 'active' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => switchView('active')}
+            >
+              Cotizaciones
+            </button>
+            <button
+              type="button"
+              className={`btn btn--sm ${view === 'archived' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => switchView('archived')}
+            >
+              Archivadas
+            </button>
+          </div>
+          {view === 'active' && (
+            <div className="cotizaciones__filters">
+              <select
+                className="form-input"
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  loadQuotes(e.target.value);
+                }}
+              >
+                <option value="">Todos los estados</option>
+                <option value="draft">Borrador</option>
+                <option value="sent">Enviada</option>
+                <option value="viewed">Vista</option>
+                <option value="accepted">Aceptada</option>
+                <option value="rejected">Rechazada</option>
+                <option value="expired">Expirada</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -149,7 +186,9 @@ export default function CotizacionesPage() {
         {loading && <Loader label="Cargando cotizaciones..." />}
         {!loading && error && <p className="cotizaciones__error">Error: {error}</p>}
         {!loading && !error && !quotes.length && (
-          <p className="cotizaciones__empty">No hay cotizaciones. ¡Crea la primera!</p>
+          <p className="cotizaciones__empty">
+            {view === 'archived' ? 'No hay cotizaciones archivadas.' : 'No hay cotizaciones. ¡Crea la primera!'}
+          </p>
         )}
         {!loading && !error && quotes.length > 0 && (
           <>
@@ -184,13 +223,23 @@ export default function CotizacionesPage() {
                   <a href={`/app/cotizaciones/${q._id}`} className="btn btn--secondary btn--sm">
                     Editar
                   </a>
-                  <button
-                    type="button"
-                    className="btn btn--danger btn--sm"
-                    onClick={() => handleDeleteQuote(q._id, q.client.name)}
-                  >
-                    Eliminar
-                  </button>
+                  {view === 'archived' ? (
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm"
+                      onClick={() => handleRestoreQuote(q._id)}
+                    >
+                      Restaurar
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn--archive btn--sm"
+                      onClick={() => handleArchiveQuote(q._id, q.client.name)}
+                    >
+                      Archivar
+                    </button>
+                  )}
                 </div>
               </div>
             );})}

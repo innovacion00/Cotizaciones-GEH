@@ -72,7 +72,8 @@ export async function listQuotes(workspaceId, userId, { page = 1, limit = 20, st
   const ws = await assertWorkspaceMember(workspaceId, userId);
   const filter = { workspace: workspaceId };
   if (memberRole(ws, userId) === 'sales') filter.owner = userId;
-  if (status) filter.status = status;
+  // Las archivadas quedan fuera de la vista general; solo aparecen si se piden explícitamente.
+  filter.status = status || { $ne: 'archived' };
 
   const [quotes, total] = await Promise.all([
     Quote.find(filter)

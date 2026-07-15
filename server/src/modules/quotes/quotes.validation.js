@@ -52,7 +52,7 @@ export const updateQuoteSchema = Joi.object({
   notes: Joi.string().max(2000).allow(''),
   taxRate: Joi.number().min(0).max(1),
   expiresAt: Joi.date().iso().allow(null),
-  status: Joi.string().valid('draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired'),
+  status: Joi.string().valid('draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired', 'archived'),
 });
 
 export const updateItemsSchema = Joi.object({

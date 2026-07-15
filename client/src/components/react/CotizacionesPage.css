@@ -1,5 +1,7 @@
 .cotizaciones { display: flex; flex-direction: column; gap: var(--space-6); }
-.cotizaciones__toolbar { display: flex; justify-content: space-between; align-items: center; }
+.cotizaciones__toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.cotizaciones__toolbar-right { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.cotizaciones__view-tabs { display: flex; gap: var(--space-2); }
 .cotizaciones__filters select { width: 200px; }
 
 .modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; padding: var(--space-4); }

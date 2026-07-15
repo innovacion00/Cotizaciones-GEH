@@ -58,7 +58,7 @@ const quoteSchema = new mongoose.Schema(
     publicToken: { type: String, unique: true, sparse: true, index: true },
     status: {
       type: String,
-      enum: ['draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired'],
+      enum: ['draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired', 'archived'],
       default: 'draft',
     },
     items: [itemSchema],
