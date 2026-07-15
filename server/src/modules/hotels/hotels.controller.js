@@ -9,6 +9,14 @@ export function listCities(_req, res, next) {
   }
 }
 
+export function listCatalog(_req, res, next) {
+  try {
+    return okResponse(res, { hotels: hotelsService.getCatalog() });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 export function listHotels(req, res, next) {
   try {
     const hotels = hotelsService.getHotelsByCity(req.query.city || '');

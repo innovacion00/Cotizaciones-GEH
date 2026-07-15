@@ -76,20 +76,23 @@ function buildBookingSectionText({ booking, rooms }, titularName) {
   ].join('\n');
 }
 
-const PACKAGE_INCLUDES = [
-  'Alojamiento según la acomodación seleccionada',
-  'Aire acondicionado',
-  'Baño privado',
-  'Amenities de baño',
-  'Toallas para uso interno del hotel',
-  'Tv plasma',
-  'Canales internacionales',
-  'Desayuno',
-  'Servicio de wifi de cortesía',
-  'Cajillas de seguridad',
-  'Servicio de guarda equipajes sin costo adicional',
-  'Iva 19%',
-];
+function buildPackageIncludes(taxExempt) {
+  const items = [
+    'Alojamiento según la acomodación seleccionada',
+    'Aire acondicionado',
+    'Baño privado',
+    'Amenities de baño',
+    'Toallas para uso interno del hotel',
+    'Tv plasma',
+    'Canales internacionales',
+    'Desayuno',
+    'Servicio de wifi de cortesía',
+    'Cajillas de seguridad',
+    'Servicio de guarda equipajes sin costo adicional',
+  ];
+  if (!taxExempt) items.push('Iva 19%');
+  return items;
+}
 
 const LEGAL_NOTES = [
   'La cadena hotelera GEH Suites protege a los niños, niñas y adolescentes de la explotación sexual y comercial Ley 679 de 2001.',
@@ -118,7 +121,8 @@ export function buildQuoteEmail({ quote }) {
     ? deadlineDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
 
-  const includesHtml = PACKAGE_INCLUDES.map((item) => `<li>${item}</li>`).join('');
+  const packageIncludes = buildPackageIncludes(quote.taxRate === 0);
+  const includesHtml = packageIncludes.map((item) => `<li>${item}</li>`).join('');
   const legalHtml = LEGAL_NOTES.map((item) => `<li>${item}</li>`).join('');
 
   const itemsHtml = items.map((item) => `
@@ -216,7 +220,7 @@ ${bookingSectionsText}
 Nota: En caso de solicitar factura a nombre de empresa, debe enviar el RUT al momento de realizar el check-in y antes de realizar check-out, de lo contrario, la reserva se facturará a nombre del huésped o titular de la reserva perdiendo el derecho a solicitar modificación o corrección del documento.
 
 El paquete incluye:
-${PACKAGE_INCLUDES.map((item) => `• ${item}`).join('\n')}
+${packageIncludes.map((item) => `• ${item}`).join('\n')}
 
 No incluye
 Ø Gastos no especificados

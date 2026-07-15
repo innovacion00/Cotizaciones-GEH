@@ -281,7 +281,7 @@ function pagePricing(doc, items, totals, taxRate, checkinYmd) {
 
     const pricePerNight = b?.nights ? Math.round(item.unitPrice / (b.nights * (item.qty || 1))) : item.unitPrice;
     const subtotalNoTax = item.subtotal;
-    const itemTax = subtotalNoTax * (taxRate || 0.19);
+    const itemTax = subtotalNoTax * (taxRate ?? 0.19);
     const subtotalWithTax = Math.round(subtotalNoTax + itemTax);
 
     const rows = [];

@@ -43,6 +43,15 @@ export function getCities() {
   return CITIES;
 }
 
+export function getCatalog() {
+  return Object.entries(HOTELS).map(([hotelId, h]) => ({
+    hotelId,
+    name: h.name,
+    city: h.city,
+    rooms: h.rooms,
+  }));
+}
+
 export function getHotelsByCity(city) {
   return Object.entries(HOTELS)
     .filter(([, h]) => h.city === city)

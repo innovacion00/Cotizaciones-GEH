@@ -144,6 +144,27 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
     }
   }
 
+  async function handleToggleTaxExempt(e) {
+    const checked = e.target.checked;
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`${apiUrl}/api/v1/quotes/${quote._id}?workspaceId=${workspaceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
+        body: JSON.stringify({ taxRate: checked ? 0 : 0.19 }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'Error actualizando');
+      setQuote(body.data.quote);
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleUpdateEmail(e) {
     e.preventDefault();
     setSaving(true);
@@ -300,6 +321,16 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
           + Agregar habitación
         </button>
       </div>
+
+      <label className="form-checkbox quote-editor__tax-toggle">
+        <input
+          type="checkbox"
+          checked={taxRate === 0}
+          disabled={saving}
+          onChange={handleToggleTaxExempt}
+        />
+        El huésped es extranjero (exento de IVA)
+      </label>
 
       <div className="quote-editor__totals">
         <div className="quote-editor__totals-row">

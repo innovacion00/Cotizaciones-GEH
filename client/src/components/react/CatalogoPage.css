@@ -1,0 +1,40 @@
+.catalogo { display: flex; flex-direction: column; gap: var(--space-8); }
+.catalogo__loading, .catalogo__error { color: var(--color-text-muted); padding: var(--space-8); text-align: center; }
+.catalogo__error { color: var(--color-danger); }
+
+.catalogo__section-title {
+  font-size: var(--text-lg); font-weight: var(--font-semibold);
+  margin-bottom: var(--space-4);
+}
+
+.catalogo__grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.catalogo__hotel-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+.catalogo__hotel-image {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--color-bg);
+}
+.catalogo__hotel-image--placeholder { background: var(--color-primary-light); }
+
+.catalogo__hotel-body { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); }
+.catalogo__hotel-name { font-weight: var(--font-semibold); }
+
+.catalogo__rooms-empty { font-size: var(--text-sm); color: var(--color-text-muted); margin-top: var(--space-2); }
+
+.catalogo__room-list {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin-top: var(--space-2); padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+.catalogo__room-item { display: flex; align-items: center; gap: var(--space-3); }
+
+.catalogo__room-image {
+  width: 40px; height: 40px; border-radius: var(--radius-sm);
+  object-fit: cover; flex-shrink: 0; background: var(--color-bg);
+}
+.catalogo__room-image--placeholder { background: var(--color-primary-light); }
+
+.catalogo__room-name { font-size: var(--text-sm); color: var(--color-text); }

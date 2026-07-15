@@ -108,6 +108,13 @@ ul, ol { list-style: none; }
 .form-input:focus { outline: none; border-color: var(--color-primary); }
 .form-error { font-size: var(--text-xs); color: var(--color-danger); }
 
+.form-checkbox {
+  display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm);
+  padding: var(--space-3); background: var(--color-bg); border-radius: var(--radius);
+  border: 1px solid var(--color-border); cursor: pointer; user-select: none;
+}
+.form-checkbox input { width: 16px; height: 16px; cursor: pointer; }
+
 /* Cards */
 .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-6); box-shadow: var(--shadow-sm); }
 

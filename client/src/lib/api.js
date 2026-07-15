@@ -38,7 +38,7 @@ async function apiFetch(path, options = {}, retry = true) {
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers, credentials: 'include' });
 
-  if (res.status === 401 && retry) {
+  if (res.status === 401 && retry && token) {
     const newToken = await refreshToken();
     headers['Authorization'] = `Bearer ${newToken}`;
     const retry2 = await fetch(`${API_URL}${path}`, { ...options, headers, credentials: 'include' });

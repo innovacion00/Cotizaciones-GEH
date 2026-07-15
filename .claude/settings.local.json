@@ -13,7 +13,26 @@
       "Bash(curl -s -H 'Authorization: Bearer __CMDSUB_OUTPUT__' http://localhost:3000/api/v1/quotes/6a551df9a4d676ca32a27c91?workspaceId=6a289135514be82d4f7472e9)",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(JSON.stringify\\(j.data.quote.owner\\)\\)}\\)\")",
       "Bash(curl -s -o /dev/null -w \"cotizaciones: HTTP %{http_code}\\\\n\" http://localhost:4321/app/cotizaciones)",
-      "Bash(curl -s -o /dev/null -w \"editor: HTTP %{http_code}\\\\n\" http://localhost:4321/app/cotizaciones/6a551df9a4d676ca32a27c91)"
+      "Bash(curl -s -o /dev/null -w \"editor: HTTP %{http_code}\\\\n\" http://localhost:4321/app/cotizaciones/6a551df9a4d676ca32a27c91)",
+      "Bash(npx eslint *)",
+      "Bash(npm run *)",
+      "Bash(chromium-cli --help)",
+      "Bash(node \"C:/Users/sekel/AppData/Local/Temp/claude/c--Users-sekel-Documents-Cotizador/74a50081-2734-45de-a617-b3fe0b97c207/scratchpad/screenshot-login.js\")",
+      "Bash(NODE_PATH=\"c:/Users/sekel/Documents/Cotizador/node_modules\" node \"C:/Users/sekel/AppData/Local/Temp/claude/c--Users-sekel-Documents-Cotizador/74a50081-2734-45de-a617-b3fe0b97c207/scratchpad/screenshot-login.js\")",
+      "Bash(NODE_PATH=\"c:/Users/sekel/Documents/Cotizador/node_modules\" node \"C:/Users/sekel/AppData/Local/Temp/claude/c--Users-sekel-Documents-Cotizador/74a50081-2734-45de-a617-b3fe0b97c207/scratchpad/screenshot-login2.js\")",
+      "Bash(pkill -f \"astro dev\")",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '\\\\''astro dev'\\\\'' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }')",
+      "Bash(curl -sf http://localhost:4321/)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 4321 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -Confirm:$false; \"Killed $_\" })",
+      "Bash(NODE_PATH=\"c:/Users/sekel/Documents/Cotizador/node_modules\" node \"C:/Users/sekel/AppData/Local/Temp/claude/c--Users-sekel-Documents-Cotizador/74a50081-2734-45de-a617-b3fe0b97c207/scratchpad/screenshot-video.js\")",
+      "Bash(curl -sI \"https://space-img.sfo3.digitaloceanspaces.com/Booking%20Connect%20App/presentacion%20final%20GEH.mp4\")",
+      "Bash(curl -sI -H \"Range: bytes=0-1023\" \"https://space-img.sfo3.digitaloceanspaces.com/Booking%20Connect%20App/presentacion%20final%20GEH.mp4\")",
+      "Bash(NODE_PATH=\"c:/Users/sekel/Documents/Cotizador/node_modules\" node \"C:/Users/sekel/AppData/Local/Temp/claude/c--Users-sekel-Documents-Cotizador/74a50081-2734-45de-a617-b3fe0b97c207/scratchpad/video-direct.js\")",
+      "Bash(NODE_PATH=\"c:/Users/sekel/Documents/Cotizador/node_modules\" node \"C:/Users/sekel/AppData/Local/Temp/claude/c--Users-sekel-Documents-Cotizador/74a50081-2734-45de-a617-b3fe0b97c207/scratchpad/video-network.js\")",
+      "Bash(curl -s -r 0-2000000 -o /tmp/video-head.bin \"https://space-img.sfo3.digitaloceanspaces.com/Booking%20Connect%20App/presentacion%20final%20GEH.mp4\")",
+      "Bash(curl -s -r 0-3000000 -o C:/Users/sekel/AppData/Local/Temp/claude/c--Users-sekel-Documents-Cotizador/74a50081-2734-45de-a617-b3fe0b97c207/scratchpad/video-head.bin https://space-img.sfo3.digitaloceanspaces.com/Booking%20Connect%20App/presentacion%20final%20GEH.mp4)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 4321 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -Confirm:$false -ErrorAction SilentlyContinue })"
     ]
   }
 }

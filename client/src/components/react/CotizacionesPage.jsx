@@ -20,6 +20,7 @@ export default function CotizacionesPage() {
     clientCompany: '',
     clientEmail: '',
     clientPhone: '',
+    isForeigner: false,
   });
 
   const loadQuotes = useCallback(async (status = '', wsId = workspaceId) => {
@@ -56,7 +57,7 @@ export default function CotizacionesPage() {
   }, [loadQuotes]);
 
   function openClientModal() {
-    setClientForm({ clientName: '', clientCompany: '', clientEmail: '', clientPhone: '' });
+    setClientForm({ clientName: '', clientCompany: '', clientEmail: '', clientPhone: '', isForeigner: false });
     setShowClientModal(true);
   }
 
@@ -84,7 +85,7 @@ export default function CotizacionesPage() {
       const data = await api.post(`/api/v1/quotes?workspaceId=${workspaceId}`, {
         client: pendingClient,
         items,
-        taxRate: 0.19,
+        taxRate: clientForm.isForeigner ? 0 : 0.19,
       });
       window.location.href = `/app/cotizaciones/${data.quote._id}`;
     } catch (err) {
@@ -239,6 +240,15 @@ export default function CotizacionesPage() {
                   onChange={(e) => setClientForm((f) => ({ ...f, clientPhone: e.target.value }))}
                 />
               </div>
+              <label className="form-checkbox">
+                <input
+                  type="checkbox"
+                  checked={clientForm.isForeigner}
+                  onChange={(e) => setClientForm((f) => ({ ...f, isForeigner: e.target.checked }))}
+                />
+                El huésped es extranjero (exento de IVA 19%)
+              </label>
+
               <div className="modal__actions">
                 <button type="button" className="btn btn--secondary" onClick={closeClientModal}>
                   Cancelar
