@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import api from '../../lib/api.js';
 import { ensureWorkspaceId, getCurrentUser } from '../../lib/auth.js';
+import { withMinDelay } from '../../lib/minDelay.js';
+import Loader from './Loader.jsx';
 import './TeamPage.css';
 
 const ROLE_LABELS = { admin: 'Admin', manager: 'Manager', sales: 'Ventas' };
@@ -20,7 +22,7 @@ export default function TeamPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.get(`/api/v1/workspaces/${wsId}/members`);
+      const data = await withMinDelay(api.get(`/api/v1/workspaces/${wsId}/members`));
       setMembers(data.members || []);
       const self = (data.members || []).find((m) => m.user?._id === currentUser?.id);
       setIsAdmin(self?.role === 'admin');
@@ -59,7 +61,7 @@ export default function TeamPage() {
     }
   }
 
-  if (loading) return <p className="team__loading">Cargando equipo...</p>;
+  if (loading) return <Loader label="Cargando equipo..." />;
   if (error) return <p className="team__error">Error: {error}</p>;
 
   return (

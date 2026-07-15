@@ -28,7 +28,10 @@ import AppLayout from '../../layouts/AppLayout.astro';
         <a href="/app/cotizaciones" class="btn btn--secondary btn--sm">Ver todas</a>
       </div>
       <div id="recent-quotes" class="dashboard__quotes-list">
-        <p class="dashboard__loading">Cargando...</p>
+        <div class="loader-wrap">
+          <span class="loader"></span>
+          <p class="loader-label">Cargando...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -37,13 +40,14 @@ import AppLayout from '../../layouts/AppLayout.astro';
 <script>
   import api from '../../lib/api.js';
   import { getWorkspaceId } from '../../lib/auth.js';
+  import { withMinDelay } from '../../lib/minDelay.js';
 
   async function loadDashboard() {
     const wsId = getWorkspaceId();
     if (!wsId) return;
 
     try {
-      const data = await api.get(`/api/v1/quotes?workspaceId=${wsId}&limit=5`);
+      const data = await withMinDelay(api.get(`/api/v1/quotes?workspaceId=${wsId}&limit=5`));
       const quotes = data.quotes || [];
 
       document.getElementById('stat-total').textContent = data.total ?? quotes.length;

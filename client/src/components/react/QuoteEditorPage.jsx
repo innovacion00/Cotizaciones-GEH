@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api.js';
 import { ensureWorkspaceId } from '../../lib/auth.js';
+import { withMinDelay } from '../../lib/minDelay.js';
 import QuoteEditor from './QuoteEditor.jsx';
+import Loader from './Loader.jsx';
 import './QuoteEditorPage.css';
 
 const API_URL = import.meta.env.API_URL || 'http://localhost:3000';
@@ -31,7 +33,7 @@ export default function QuoteEditorPage({ quoteId }) {
           return;
         }
 
-        const data = await api.get(`/api/v1/quotes/${quoteId}?workspaceId=${wsId}`);
+        const data = await withMinDelay(api.get(`/api/v1/quotes/${quoteId}?workspaceId=${wsId}`));
         if (cancelled) return;
 
         setQuote(data.quote);
@@ -49,7 +51,7 @@ export default function QuoteEditorPage({ quoteId }) {
   }, [quoteId]);
 
   if (status === 'loading') {
-    return <p className="editor-loading">Cargando cotización...</p>;
+    return <Loader label="Cargando cotización..." />;
   }
 
   if (status === 'error') {

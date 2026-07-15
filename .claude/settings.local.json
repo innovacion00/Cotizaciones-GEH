@@ -33,7 +33,8 @@
       "Bash(curl -s -r 0-2000000 -o /tmp/video-head.bin \"https://space-img.sfo3.digitaloceanspaces.com/Booking%20Connect%20App/presentacion%20final%20GEH.mp4\")",
       "Bash(curl -s -r 0-3000000 -o C:/Users/sekel/AppData/Local/Temp/claude/c--Users-sekel-Documents-Cotizador/74a50081-2734-45de-a617-b3fe0b97c207/scratchpad/video-head.bin https://space-img.sfo3.digitaloceanspaces.com/Booking%20Connect%20App/presentacion%20final%20GEH.mp4)",
       "PowerShell(Get-NetTCPConnection -LocalPort 4321 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -Confirm:$false -ErrorAction SilentlyContinue })",
-      "Bash(npx jest *)"
+      "Bash(npx jest *)",
+      "Bash(npx astro *)"
     ]
   }
 }

@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import api from '../../lib/api.js';
 import { ensureWorkspaceId } from '../../lib/auth.js';
+import { withMinDelay } from '../../lib/minDelay.js';
 import HotelBookingWizard from './HotelBookingWizard.jsx';
+import Loader from './Loader.jsx';
 import './CotizacionesPage.css';
 
 export default function CotizacionesPage() {
@@ -30,7 +32,7 @@ export default function CotizacionesPage() {
     try {
       const params = new URLSearchParams({ workspaceId: wsId, limit: '50' });
       if (status) params.set('status', status);
-      const data = await api.get(`/api/v1/quotes?${params}`);
+      const data = await withMinDelay(api.get(`/api/v1/quotes?${params}`));
       setQuotes(data.quotes || []);
     } catch (err) {
       setError(err.message || 'Error al cargar cotizaciones');
@@ -144,7 +146,7 @@ export default function CotizacionesPage() {
       </div>
 
       <div className="cotizaciones__list">
-        {loading && <p className="cotizaciones__loading">Cargando cotizaciones...</p>}
+        {loading && <Loader label="Cargando cotizaciones..." />}
         {!loading && error && <p className="cotizaciones__error">Error: {error}</p>}
         {!loading && !error && !quotes.length && (
           <p className="cotizaciones__empty">No hay cotizaciones. ¡Crea la primera!</p>

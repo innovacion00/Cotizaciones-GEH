@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api.js';
 import { getHotelImageUrl } from '../../lib/hotelImages.js';
 import { getRoomImageUrl } from '../../lib/roomImages.js';
+import { withMinDelay } from '../../lib/minDelay.js';
+import Loader from './Loader.jsx';
 import './CatalogoPage.css';
 
 function groupByCity(hotels) {
@@ -63,7 +65,7 @@ export default function CatalogoPage() {
     let cancelled = false;
     (async () => {
       try {
-        const data = await api.get('/api/v1/hotels/catalog');
+        const data = await withMinDelay(api.get('/api/v1/hotels/catalog'));
         if (cancelled) return;
         setCityGroups(groupByCity(data.hotels || []));
       } catch (err) {
@@ -75,7 +77,7 @@ export default function CatalogoPage() {
     return () => { cancelled = true; };
   }, []);
 
-  if (loading) return <p className="catalogo__loading">Cargando catálogo...</p>;
+  if (loading) return <Loader label="Cargando catálogo..." />;
   if (error) return <p className="catalogo__error">Error: {error}</p>;
 
   return (
