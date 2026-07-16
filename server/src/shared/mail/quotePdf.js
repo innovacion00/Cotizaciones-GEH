@@ -363,8 +363,8 @@ function pagePayment(doc, bankAccountKey, responsable, signatureImg) {
     doc.moveDown(0.4);
     if (signatureImg) {
       try {
-        doc.image(signatureImg, M, doc.y, { fit: [160, 55] });
-        doc.y += 60;
+        doc.image(signatureImg, M, doc.y, { fit: [260, 100] });
+        doc.y += 105;
       } catch { /* skip unreadable signature */ }
     }
     doc.font('Helvetica').fontSize(10).fillColor(DARK).text(responsable.label, M, doc.y, { width: CW });
