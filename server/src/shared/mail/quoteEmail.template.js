@@ -173,7 +173,7 @@ export function buildQuoteEmail({ quote }) {
     ${responsable ? `
     <div style="margin:0 0 24px;text-align:left;">
       <p style="margin:0 0 8px;font-weight:600;text-align:left;">Atendido por</p>
-      ${responsable.signatureUrl ? `<img src="${responsable.signatureUrl}" alt="${responsable.label}" style="height:48px;max-width:200px;display:block;margin:0 0 4px;" />` : ''}
+      ${responsable.signatureUrl ? `<img src="${responsable.signatureUrl}" alt="${responsable.label}" style="height:100px;max-width:320px;display:block;margin:0 0 4px;" />` : ''}
       <p style="margin:0;text-align:left;">${responsable.label}</p>
     </div>
     ` : ''}

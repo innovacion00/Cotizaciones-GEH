@@ -157,7 +157,7 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
   // --- Manual room helpers ---
   function addManualRoom() {
     const n = availability?.nights || computeNights(checkin, checkout);
-    setManualRooms((prev) => [...prev, { roomName: '', pricePerNight: 0, nights: n || 1 }]);
+    setManualRooms((prev) => [...prev, { roomName: '', pricePerNight: 0, nights: n || 1, qty: 1 }]);
   }
 
   function updateManualRoom(index, field, value) {
@@ -169,7 +169,7 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
   }
 
   function validManualRooms() {
-    return manualRooms.filter((r) => r.roomName.trim() && r.pricePerNight > 0 && r.nights > 0);
+    return manualRooms.filter((r) => r.roomName.trim() && r.pricePerNight > 0 && r.nights > 0 && (r.qty || 1) > 0);
   }
 
   // --- Availability search ---
@@ -225,12 +225,13 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
 
     if (manualMode) {
       for (const r of validManualRooms()) {
+        const qty = r.qty || 1;
         items.push({
           name: `${hotelName} — ${r.roomName} (${r.nights} noche${r.nights !== 1 ? 's' : ''})`,
-          qty: 1,
+          qty,
           unitPrice: r.pricePerNight * r.nights,
           discount: 0,
-          subtotal: r.pricePerNight * r.nights,
+          subtotal: r.pricePerNight * r.nights * qty,
           booking: {
             city, hotelId, hotelName,
             roomId: null, roomName: r.roomName,
@@ -470,7 +471,8 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
             {manualMode && (
               <div className="hwiz__manual-rooms">
                 {manualRooms.map((r, i) => {
-                  const subtotal = r.pricePerNight * r.nights;
+                  const qty = r.qty || 1;
+                  const subtotal = r.pricePerNight * r.nights * qty;
                   const iva = Math.round(subtotal * 0.19);
                   const total = subtotal + iva;
                   return (
@@ -486,6 +488,10 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
                     <div className="form-group">
                       <label className="form-label">Noches</label>
                       <input className="form-input" type="number" min="1" value={r.nights} onChange={(e) => updateManualRoom(i, 'nights', parseInt(e.target.value, 10) || 1)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Cantidad</label>
+                      <input className="form-input" type="number" min="1" value={qty} onChange={(e) => updateManualRoom(i, 'qty', parseInt(e.target.value, 10) || 1)} />
                     </div>
                     <div className="hwiz__manual-room-total">
                       <div>{formatCOP(subtotal)}</div>
