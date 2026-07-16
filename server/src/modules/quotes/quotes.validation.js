@@ -17,6 +17,7 @@ const bookingSchema = Joi.object({
   currency: Joi.string(),
   trm: Joi.number().allow(null),
   bankAccountKey: Joi.string().allow('', null),
+  responsableKey: Joi.string().allow('', null),
 }).unknown(true);
 
 const itemSchema = Joi.object({
@@ -38,6 +39,7 @@ export const createQuoteSchema = Joi.object({
   items: Joi.array().items(itemSchema).default([]),
   notes: Joi.string().max(2000).allow('').default(''),
   taxRate: Joi.number().min(0).max(1).default(0.16),
+  paymentDeadline: Joi.string().allow('', null),
   expiresAt: Joi.date().iso().allow(null),
 });
 
@@ -51,6 +53,7 @@ export const updateQuoteSchema = Joi.object({
   items: Joi.array().items(itemSchema),
   notes: Joi.string().max(2000).allow(''),
   taxRate: Joi.number().min(0).max(1),
+  paymentDeadline: Joi.string().allow('', null),
   expiresAt: Joi.date().iso().allow(null),
   status: Joi.string().valid('draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired', 'archived'),
 });

@@ -18,6 +18,7 @@ router.use((req, _res, next) => {
 router.get('/', quotesController.list);
 router.post('/', validate(createQuoteSchema), quotesController.create);
 router.get('/:id', quotesController.getOne);
+router.get('/:id/pdf', quotesController.downloadPdf);
 router.patch('/:id', validate(updateQuoteSchema), quotesController.update);
 router.patch('/:id/items', validate(updateItemsSchema), quotesController.updateItems);
 router.post('/:id/send', quotesController.send);

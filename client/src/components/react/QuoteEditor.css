@@ -36,6 +36,8 @@
 
 .quote-editor__tax-toggle { align-self: flex-end; min-width: 320px; }
 
+.quote-editor__deadline { align-self: flex-end; width: 220px; }
+
 .quote-editor__totals {
   align-self: flex-end; min-width: 320px; background: var(--color-surface);
   border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden;

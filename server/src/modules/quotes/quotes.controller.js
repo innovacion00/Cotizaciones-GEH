@@ -51,6 +51,17 @@ export async function updateItems(req, res, next) {
   }
 }
 
+export async function downloadPdf(req, res, next) {
+  try {
+    const { buffer, filename } = await quotesService.getQuotePdf(req.params.id, req.workspaceId, req.user.sub);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/"/g, '')}"`);
+    return res.send(buffer);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 export async function send(req, res, next) {
   try {
     const quote = await quotesService.sendQuote(req.params.id, req.workspaceId, req.user.sub);

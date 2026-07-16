@@ -30,8 +30,15 @@ function calcPaymentDeadline(checkinYmd: string) {
   return endPrevMonth <= twoBefore ? endPrevMonth : twoBefore;
 }
 
+function parseYmd(ymd: string) {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 const primaryCheckin = quote?.items?.find((i: any) => i.booking?.checkin)?.booking?.checkin;
-const deadlineDate = primaryCheckin ? calcPaymentDeadline(primaryCheckin) : null;
+const deadlineDate = quote?.paymentDeadline
+  ? parseYmd(quote.paymentDeadline)
+  : (primaryCheckin ? calcPaymentDeadline(primaryCheckin) : null);
 const deadlineStr = deadlineDate
   ? deadlineDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
   : '';
@@ -77,7 +84,7 @@ const STATUS_LABELS = {
 
       {deadlineStr && (
         <div class="public-quote__deadline card">
-          <p><strong>Fecha límite de anticipo:</strong> {deadlineStr}</p>
+          <p><strong>Fecha límite de pago:</strong> {deadlineStr}</p>
         </div>
       )}
 

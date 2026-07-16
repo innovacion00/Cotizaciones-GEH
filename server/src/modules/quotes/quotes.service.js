@@ -6,6 +6,7 @@ import { eventBus } from '../../shared/events/EventBus.js';
 import { NotFoundError, ForbiddenError, AppError } from '../../shared/errors/AppError.js';
 import { env } from '../../config/env.js';
 import { sendQuoteEmail } from '../../shared/mail/mail.service.js';
+import { buildQuotePdf, buildPdfFilename } from '../../shared/mail/quotePdf.js';
 
 function calculateTotals(items, taxRate = 0.16) {
   const subtotalBeforeDiscount = items.reduce((acc, item) => acc + item.unitPrice * item.qty, 0);
@@ -144,6 +145,12 @@ export async function sendQuote(quoteId, workspaceId, userId) {
   return quote;
 }
 
+export async function getQuotePdf(quoteId, workspaceId, userId) {
+  const quote = await findQuote(quoteId, workspaceId, userId);
+  const buffer = await buildQuotePdf({ quote: quote.toObject() });
+  return { buffer, filename: buildPdfFilename(quote) };
+}
+
 export async function deleteQuote(quoteId, workspaceId, userId) {
   const quote = await findQuote(quoteId, workspaceId, userId);
   await quote.deleteOne();
@@ -178,6 +185,7 @@ export async function getPublicQuote(publicToken) {
     })),
     totals: quote.totals,
     notes: quote.notes,
+    paymentDeadline: quote.paymentDeadline,
     expiresAt: quote.expiresAt,
     createdAt: quote.createdAt,
     workspace: {

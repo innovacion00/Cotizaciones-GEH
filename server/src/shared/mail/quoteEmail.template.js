@@ -1,8 +1,5 @@
-import { calcPaymentDeadline } from './quotePdf.js';
-
-function formatCurrency(n) {
-  return (n || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-}
+import { resolveDeadlineStr } from './quotePdf.js';
+import { RESPONSABLES } from './responsables.js';
 
 function formatDate(ymd) {
   if (!ymd) return '—';
@@ -103,7 +100,6 @@ const LEGAL_NOTES = [
 export function buildQuoteEmail({ quote }) {
   const clientName = quote.client?.name || 'Cliente';
   const items = quote.items || [];
-  const totals = quote.totals || {};
   const bookingGroups = groupBookings(items);
   const primaryHotel = bookingGroups[0]?.booking?.hotelName;
 
@@ -116,22 +112,15 @@ export function buildQuoteEmail({ quote }) {
     : '<p style="margin:0 0 20px;color:#64748b;">Sin detalle de reserva hotelera.</p>';
 
   const primaryCheckin = bookingGroups[0]?.booking?.checkin;
-  const deadlineDate = calcPaymentDeadline(primaryCheckin);
-  const deadlineStr = deadlineDate
-    ? deadlineDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
-    : '';
+  const deadlineStr = resolveDeadlineStr(quote, primaryCheckin);
+
+  const responsableKey = bookingGroups[0]?.booking?.responsableKey
+    || items.find((i) => i.booking?.responsableKey)?.booking?.responsableKey;
+  const responsable = responsableKey && RESPONSABLES[responsableKey];
 
   const packageIncludes = buildPackageIncludes(quote.taxRate === 0);
   const includesHtml = packageIncludes.map((item) => `<li>${item}</li>`).join('');
   const legalHtml = LEGAL_NOTES.map((item) => `<li>${item}</li>`).join('');
-
-  const itemsHtml = items.map((item) => `
-    <tr>
-      <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;">${item.name}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center;">${item.qty}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right;">${formatCurrency(item.subtotal)}</td>
-    </tr>
-  `).join('');
 
   const html = `
 <!DOCTYPE html>
@@ -173,7 +162,7 @@ export function buildQuoteEmail({ quote }) {
 
     ${deadlineStr ? `
     <p style="margin:0 0 20px;text-align:left;padding:12px 16px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;">
-      <strong>Fecha límite de anticipo:</strong> ${deadlineStr}
+      <strong>Fecha límite de pago:</strong> ${deadlineStr}
     </p>
     ` : ''}
 
@@ -181,21 +170,11 @@ export function buildQuoteEmail({ quote }) {
     <ul style="margin:0 0 24px;padding-left:20px;line-height:1.7;text-align:left;">${legalHtml}</ul>
     </div>
 
-    ${items.length > 0 ? `
-    <div style="text-align:center;margin:0 0 24px;">
-    <table style="width:100%;max-width:560px;margin:0 auto;border-collapse:collapse;font-size:14px;text-align:left;">
-      <thead>
-        <tr style="background:#f8fafc;">
-          <th style="padding:8px 12px;text-align:left;font-size:12px;color:#64748b;">Descripción</th>
-          <th style="padding:8px 12px;text-align:center;font-size:12px;color:#64748b;">Cant.</th>
-          <th style="padding:8px 12px;text-align:right;font-size:12px;color:#64748b;">Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>${itemsHtml}</tbody>
-    </table>
-    <p style="text-align:center;font-size:18px;font-weight:700;margin:16px 0 0;">
-      Total: ${formatCurrency(totals.total)}
-    </p>
+    ${responsable ? `
+    <div style="margin:0 0 24px;text-align:left;">
+      <p style="margin:0 0 8px;font-weight:600;text-align:left;">Atendido por</p>
+      ${responsable.signatureUrl ? `<img src="${responsable.signatureUrl}" alt="${responsable.label}" style="height:48px;max-width:200px;display:block;margin:0 0 4px;" />` : ''}
+      <p style="margin:0;text-align:left;">${responsable.label}</p>
     </div>
     ` : ''}
 
@@ -229,11 +208,11 @@ Hora de ingreso: 3:00 pm
 Horario de salida: 12:00 Mediodía
 
 Nota: el NO envío del comprobante en la fecha estipulada o anterior a esta, puede causar la apertura de disponibilidad o venta de la habitación sin previo aviso, por lo tanto, es de suma importancia hacer el envío de la foto o escáner por el presente medio como prueba de garantía.
-${deadlineStr ? `\nFecha límite de anticipo: ${deadlineStr}\n` : ''}
+${deadlineStr ? `\nFecha límite de pago: ${deadlineStr}\n` : ''}
 Tener en cuenta:
 ${LEGAL_NOTES.map((item) => `• ${item}`).join('\n')}
 
-${items.length > 0 ? `Total: ${formatCurrency(totals.total)}\n` : ''}
+${responsable ? `Atendido por: ${responsable.label}\n` : ''}
 Quedamos atentos a sus comentarios.
 `;
 

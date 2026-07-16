@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import './HotelBookingWizard.css';
 import { getHotelImageUrl } from '../../lib/hotelImages.js';
 import { getRoomImageUrl } from '../../lib/roomImages.js';
 import { BANK_ACCOUNTS, getDefaultBankKey } from '../../lib/bankAccounts.js';
+import { RESPONSABLES } from '../../lib/responsables.js';
 
 const API_URL = import.meta.env.API_URL || 'http://localhost:3000';
 
@@ -45,6 +47,7 @@ function nightsLabel(checkin, checkout) {
   return n > 0 ? `${n} noche${n !== 1 ? 's' : ''}` : '';
 }
 
+
 function HotelPreview({ hotelId, hotelName, city, compact = false }) {
   const imageUrl = getHotelImageUrl(hotelId, hotelName);
   if (!hotelId || !hotelName) return null;
@@ -81,6 +84,8 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
   const [manualMode, setManualMode] = useState(false);
   const [manualRooms, setManualRooms] = useState([]);
   const [bankKey, setBankKey] = useState('');
+  const [responsableKey, setResponsableKey] = useState('');
+  const [paymentDeadline, setPaymentDeadline] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -200,6 +205,20 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
 
   // --- Confirm ---
   function confirmar() {
+    const selectedCount = manualMode ? validManualRooms().length : totalSelectedRooms();
+    const missing = [];
+    if (selectedCount === 0) missing.push('selecciona al menos 1 habitación');
+    if (!responsableKey) missing.push('selecciona el responsable a cargo');
+    if (!paymentDeadline) missing.push('selecciona la fecha límite de pago');
+    if (missing.length > 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Faltan datos',
+        text: `Antes de confirmar, ${missing.join(' y ')}.`,
+      });
+      return;
+    }
+
     const nights = availability?.nights || computeNights(checkin, checkout);
     const nLabel = `${nights} noche${nights !== 1 ? 's' : ''}`;
     const items = [];
@@ -220,6 +239,7 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
             boardTypeDescription: '', refundable: '', cancellationPolicy: '',
             currency: 'COP', trm: null,
             bankAccountKey: bankKey || undefined,
+            responsableKey: responsableKey || undefined,
           },
         });
       }
@@ -244,18 +264,17 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
             currency: room.pricing.currency,
             trm: room.pricing.trm,
             bankAccountKey: bankKey || undefined,
+            responsableKey: responsableKey || undefined,
           },
         });
       }
     }
 
     if (items.length === 0) return;
-    onConfirm(items);
+    onConfirm(items, paymentDeadline);
   }
 
-  const canConfirm = manualMode
-    ? validManualRooms().length > 0 && !!bankKey && !submitting
-    : totalSelectedRooms() > 0 && !!bankKey && !submitting;
+  const canConfirm = !!bankKey && !submitting;
 
   const confirmCount = manualMode ? validManualRooms().length : totalSelectedRooms();
   const nights = availability?.nights || computeNights(checkin, checkout);
@@ -327,13 +346,25 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
                 <input
                   className="form-input" type="date" value={checkout}
                   min={checkin ? addDaysYMD(checkin, 1) : todayYMD()}
-                  onChange={(e) => setCheckout(e.target.value)}
+                  onChange={(e) => {
+                    setCheckout(e.target.value);
+                    if (paymentDeadline && e.target.value && paymentDeadline > e.target.value) setPaymentDeadline('');
+                  }}
                 />
               </div>
             </div>
             {nightsLabel(checkin, checkout) && (
               <p className="hwiz__nights-label">{nightsLabel(checkin, checkout)}</p>
             )}
+            <div className="form-group hwiz__deadline">
+              <label className="form-label">Fecha límite de pago *</label>
+              <input
+                className="form-input" type="date" value={paymentDeadline}
+                min={todayYMD()}
+                max={checkout || undefined}
+                onChange={(e) => setPaymentDeadline(e.target.value)}
+              />
+            </div>
             <div className="hwiz__guests">
               <div className="form-group">
                 <label className="form-label">Adultos *</label>
@@ -493,6 +524,31 @@ export default function HotelBookingWizard({ onConfirm, onCancel, submitting = f
                 </div>
               )}
             </div>
+
+            <div className="form-group">
+              <label className="form-label">Responsable a cargo (firma) *</label>
+              <select className="form-input" value={responsableKey} onChange={(e) => setResponsableKey(e.target.value)}>
+                <option value="">Selecciona un responsable</option>
+                {Object.entries(RESPONSABLES).map(([key, { label }]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+              {responsableKey && RESPONSABLES[responsableKey] && (
+                <div className="hwiz__signature-preview">
+                  {RESPONSABLES[responsableKey].signatureUrl ? (
+                    <img
+                      className="hwiz__signature-image"
+                      src={RESPONSABLES[responsableKey].signatureUrl}
+                      alt={RESPONSABLES[responsableKey].label}
+                    />
+                  ) : (
+                    <span className="hwiz__signature-missing">Sin firma cargada</span>
+                  )}
+                  <strong>{RESPONSABLES[responsableKey].label}</strong>
+                </div>
+              )}
+            </div>
+
             <div className="hwiz__footer">
               <button className="btn btn--secondary" onClick={() => { setStep(2); setAvailability(null); setRoomQuantities({}); setManualRooms([]); }}>← Atrás</button>
               <button className="btn btn--primary" onClick={confirmar} disabled={!canConfirm}>

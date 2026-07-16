@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import './QuoteEditor.css';
 import HotelBookingWizard from './HotelBookingWizard.jsx';
+import { getResponsableLabel } from '../../lib/responsables.js';
 
 function formatCurrency(n) {
   return (n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -62,32 +63,65 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
 
   const taxRate = quote?.taxRate ?? 0.16;
   const totals = computeTotals(items, taxRate);
+  const responsableLabel = getResponsableLabel(items.find((i) => i.booking?.responsableKey)?.booking?.responsableKey);
 
   function getToken() {
     return typeof localStorage !== 'undefined' ? localStorage.getItem('accessToken') : '';
   }
 
-  const saveItems = useCallback(async (newItems) => {
+  const saveItems = useCallback(async (newItems, extra = {}) => {
     setSaving(true);
     setError('');
     try {
-      const res = await fetch(`${apiUrl}/api/v1/quotes/${quote._id}/items?workspaceId=${workspaceId}`, {
+      // Se usa el endpoint general (no /items) para poder guardar los items y campos
+      // como paymentDeadline en una sola petición y evitar condiciones de carrera
+      // entre dos PATCH concurrentes que se pisan el uno al otro.
+      const res = await fetch(`${apiUrl}/api/v1/quotes/${quote._id}?workspaceId=${workspaceId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         credentials: 'include',
-        body: JSON.stringify({ items: newItems.map(({ _id: id, ...rest }) => ({ ...rest })) }),
+        body: JSON.stringify({ items: newItems.map(({ _id: id, ...rest }) => ({ ...rest })), ...extra }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Error guardando');
       setQuote(body.data.quote);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      return true;
     } catch (err) {
       setError(err.message);
+      return false;
     } finally {
       setSaving(false);
     }
   }, [quote?._id, workspaceId, apiUrl]);
+
+  async function downloadPdf() {
+    try {
+      const res = await fetch(`${apiUrl}/api/v1/quotes/${quote._id}/pdf?workspaceId=${workspaceId}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Error generando el PDF');
+      }
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="(.+)"/);
+      const filename = match ? match[1] : 'cotizacion.pdf';
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+  }
 
   function updateItem(index, field, value) {
     const updated = items.map((item, i) => {
@@ -107,8 +141,9 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
     setItems(items.filter((_, i) => i !== index));
   }
 
-  function handleSave() {
-    saveItems(items);
+  async function handleSave() {
+    const ok = await saveItems(items);
+    if (ok) downloadPdf();
   }
 
   async function handleSend() {
@@ -158,6 +193,26 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         credentials: 'include',
         body: JSON.stringify({ taxRate: checked ? 0 : 0.19 }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'Error actualizando');
+      setQuote(body.data.quote);
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function updatePaymentDeadline(paymentDeadline) {
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`${apiUrl}/api/v1/quotes/${quote._id}?workspaceId=${workspaceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
+        body: JSON.stringify({ paymentDeadline }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Error actualizando');
@@ -230,6 +285,7 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
           {quote?.client?.company && <span className="quote-editor__client-company">{quote.client.company}</span>}
           <span className={`badge badge--${quote?.status}`}>{quote?.status}</span>
           {quote?.owner?.name && <span className="quote-editor__owner">Responsable: {quote.owner.name}</span>}
+          {responsableLabel && <span className="quote-editor__owner">Firma: {responsableLabel}</span>}
         </div>
         <div className="quote-editor__actions">
           {error && <span className="quote-editor__error">{error}</span>}
@@ -336,6 +392,17 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
         El huésped es extranjero (exento de IVA)
       </label>
 
+      <div className="form-group quote-editor__deadline">
+        <label className="form-label">Fecha límite de pago</label>
+        <input
+          className="form-input"
+          type="date"
+          value={quote?.paymentDeadline || ''}
+          disabled={saving}
+          onChange={(e) => updatePaymentDeadline(e.target.value)}
+        />
+      </div>
+
       <div className="quote-editor__totals">
         <div className="quote-editor__totals-row">
           <span>Subtotal</span>
@@ -359,14 +426,14 @@ export default function QuoteEditor({ quote: initialQuote, workspaceId, apiUrl =
 
       {showHotelWizard && (
         <HotelBookingWizard
-          onConfirm={(newRoomItems) => {
+          onConfirm={(newRoomItems, paymentDeadline) => {
             const timestamped = newRoomItems.map((item, i) => ({
               ...item,
               _id: `new-${Date.now()}-${i}`,
             }));
             const newItems = [...items, ...timestamped];
             setItems(newItems);
-            saveItems(newItems);
+            saveItems(newItems, paymentDeadline ? { paymentDeadline } : {});
             setShowHotelWizard(false);
           }}
           onCancel={() => setShowHotelWizard(false)}

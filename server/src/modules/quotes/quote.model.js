@@ -18,6 +18,7 @@ const bookingSchema = new mongoose.Schema(
     currency: String,
     trm: Number,
     bankAccountKey: String,
+    responsableKey: String,
   },
   { _id: false }
 );
@@ -65,6 +66,7 @@ const quoteSchema = new mongoose.Schema(
     totals: { type: totalsSchema, default: () => ({}) },
     taxRate: { type: Number, default: 0.16 },
     notes: { type: String, default: '' },
+    paymentDeadline: { type: String },
     expiresAt: { type: Date },
     version: { type: Number, default: 1 },
   },

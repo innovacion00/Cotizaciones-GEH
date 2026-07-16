@@ -2,7 +2,7 @@ import { env } from '../../config/env.js';
 import { AppError } from '../errors/AppError.js';
 import { getGmailClient } from './gmail.client.js';
 import { buildQuoteEmail } from './quoteEmail.template.js';
-import { buildQuotePdf } from './quotePdf.js';
+import { buildQuotePdf, buildPdfFilename } from './quotePdf.js';
 
 function encodeMimeMessage({ to, from, subject, html, text, attachments = [] }) {
   const boundary = `cotizador_${Date.now()}`;
@@ -85,12 +85,7 @@ export async function sendQuoteEmail({ quote, publicUrl, senderName }) {
     console.error('Error generando PDF, se enviará sin adjunto:', err.message);
   }
 
-  const primaryHotel = (quote.items || []).find((i) => i.booking?.hotelName)?.booking?.hotelName;
-  const now = new Date();
-  const dateStr = `${String(now.getDate()).padStart(2, '0')}_${String(now.getMonth() + 1).padStart(2, '0')}_${now.getFullYear()}`;
-  const pdfName = primaryHotel
-    ? `COTIZACIÓN DE RESERVA ${primaryHotel.toUpperCase()}  ${dateStr}.pdf`
-    : `Cotizacion ${dateStr}.pdf`;
+  const pdfName = buildPdfFilename(quote);
 
   const attachments = pdfBuffer
     ? [{ filename: pdfName, contentType: 'application/pdf', content: pdfBuffer }]

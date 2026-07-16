@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
 import { getHotelImageUrl, getRoomImageUrl } from './images.js';
 import { BANK_ACCOUNTS } from './bankAccounts.js';
+import { RESPONSABLES } from './responsables.js';
 
 const LOGO_URL = 'https://space-img.sfo3.digitaloceanspaces.com/Agencias/gehlogo.png';
 const LOGO_W = 130;
@@ -47,6 +48,13 @@ function fmtDeadline(checkinYmd) {
   const d = calcPaymentDeadline(checkinYmd);
   if (!d) return '';
   return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// El usuario puede fijar manualmente la fecha límite de pago; si no la fijó, se calcula
+// automáticamente a partir del check-in como fallback (cotizaciones antiguas sin el campo).
+export function resolveDeadlineStr(quote, primaryCheckinYmd) {
+  if (quote?.paymentDeadline) return fmtDate(quote.paymentDeadline);
+  return fmtDeadline(primaryCheckinYmd);
 }
 
 function groupBookings(items) {
@@ -237,7 +245,7 @@ function pageDescription(doc, group) {
 }
 
 // ─── Page 4: Pricing ────────────────────────────────────────────────────────
-function pagePricing(doc, items, totals, taxRate, checkinYmd) {
+function pagePricing(doc, items, totals, taxRate, deadlineStr) {
   doc.addPage();
   sectionTitle(doc, 'Tarifas');
 
@@ -253,9 +261,8 @@ function pagePricing(doc, items, totals, taxRate, checkinYmd) {
 
   doc.y = bandTop + 140;
 
-  const deadline = fmtDeadline(checkinYmd);
   doc.font('Helvetica-Bold').fontSize(11).fillColor(DARK);
-  doc.text(`Fecha límite de anticipo: ${deadline}`, M, doc.y, { width: CW });
+  doc.text(`Fecha límite de pago: ${deadlineStr || ''}`, M, doc.y, { width: CW });
   doc.moveDown(2);
 
   const tX = M + 40;
@@ -317,7 +324,7 @@ function pagePricing(doc, items, totals, taxRate, checkinYmd) {
 }
 
 // ─── Page 5: Payment methods ────────────────────────────────────────────────
-function pagePayment(doc, bankAccountKey) {
+function pagePayment(doc, bankAccountKey, responsable, signatureImg) {
   doc.addPage();
   sectionTitle(doc, 'Métodos de pago');
 
@@ -349,6 +356,19 @@ function pagePayment(doc, bankAccountKey) {
   }
 
   doc.font('Helvetica-Bold').fontSize(10).fillColor(DARK).text('Link de pago (a solicitud del cliente).', M, doc.y, { width: CW });
+
+  if (responsable) {
+    doc.moveDown(2);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(DARK).text('Atendido por', M, doc.y, { width: CW });
+    doc.moveDown(0.4);
+    if (signatureImg) {
+      try {
+        doc.image(signatureImg, M, doc.y, { fit: [160, 55] });
+        doc.y += 60;
+      } catch { /* skip unreadable signature */ }
+    }
+    doc.font('Helvetica').fontSize(10).fillColor(DARK).text(responsable.label, M, doc.y, { width: CW });
+  }
 }
 
 // ─── Page 6: Terms ──────────────────────────────────────────────────────────
@@ -404,6 +424,15 @@ function pageTerms(doc) {
   doc.text('Whatsapp y Llamadas +57 3336025021', M, doc.y, { align: 'center', width: CW });
 }
 
+export function buildPdfFilename(quote) {
+  const primaryHotel = (quote.items || []).find((i) => i.booking?.hotelName)?.booking?.hotelName;
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}_${String(now.getMonth() + 1).padStart(2, '0')}_${now.getFullYear()}`;
+  return primaryHotel
+    ? `COTIZACIÓN DE RESERVA ${primaryHotel.toUpperCase()}  ${dateStr}.pdf`
+    : `Cotizacion ${dateStr}.pdf`;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 export async function buildQuotePdf({ quote }) {
   const clientName = quote.client?.name || 'Cliente';
@@ -411,6 +440,11 @@ export async function buildQuotePdf({ quote }) {
   const totals = quote.totals || {};
   const taxRate = quote.taxRate ?? 0.19;
   const groups = groupBookings(items);
+
+  const primary = groups[0];
+  const responsableKey = primary?.items[0]?.booking?.responsableKey
+    || items.find((i) => i.booking?.responsableKey)?.booking?.responsableKey;
+  const responsable = responsableKey && RESPONSABLES[responsableKey];
 
   const imageBuffers = new Map();
   const toFetch = [];
@@ -423,6 +457,7 @@ export async function buildQuotePdf({ quote }) {
       if (rUrl) toFetch.push({ key: `r:${g.booking.hotelId}:${r.roomId}`, url: rUrl });
     }
   }
+  if (responsable?.signatureUrl) toFetch.push({ key: 'signature', url: responsable.signatureUrl });
 
   const [logoImg, ...fetched] = await Promise.all([
     fetchImg(LOGO_URL),
@@ -436,19 +471,20 @@ export async function buildQuotePdf({ quote }) {
   const chunks = [];
   doc.on('data', (c) => chunks.push(c));
 
-  const primary = groups[0];
   if (primary) {
     const hImg = imageBuffers.get(`h:${primary.booking.hotelId}`);
     const rKey = `r:${primary.booking.hotelId}:${primary.rooms[0]?.roomId}`;
     const rImg = imageBuffers.get(rKey);
+    const signatureImg = imageBuffers.get('signature');
 
     pageCover(doc, primary.booking, hImg, logoImg);
     pageWelcome(doc, primary.booking, clientName, rImg);
     pageDescription(doc, primary);
     const bankKey = primary.items[0]?.booking?.bankAccountKey
       || items.find((i) => i.booking?.bankAccountKey)?.booking?.bankAccountKey;
-    pagePricing(doc, items, totals, taxRate, primary.booking.checkin);
-    pagePayment(doc, bankKey);
+    const deadlineStr = resolveDeadlineStr(quote, primary.booking.checkin);
+    pagePricing(doc, items, totals, taxRate, deadlineStr);
+    pagePayment(doc, bankKey, responsable, signatureImg);
     pageTerms(doc);
   } else {
     sectionTitle(doc, 'Cotización');
@@ -456,7 +492,7 @@ export async function buildQuotePdf({ quote }) {
     doc.text(`Estimado ${clientName},`, M, doc.y, { width: CW });
     doc.moveDown(0.5);
     if (items.length) {
-      pagePricing(doc, items, totals, taxRate);
+      pagePricing(doc, items, totals, taxRate, resolveDeadlineStr(quote, null));
     }
   }
 
