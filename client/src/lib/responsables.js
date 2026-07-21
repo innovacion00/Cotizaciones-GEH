@@ -37,7 +37,7 @@ export const RESPONSABLES = {
   },
   dina_guerrero: {
     label: 'Dina Guerrero',
-    signatureUrl: '',
+    signatureUrl: 'https://space-img.sfo3.digitaloceanspaces.com/firmas/Dina%20Guerrero.png',
   },
 };
 
